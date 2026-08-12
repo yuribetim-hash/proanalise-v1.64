@@ -19,7 +19,7 @@ st.set_page_config(
 )
 
 # ============================================
-# CONFIGURAÇÕES INICIAIS
+# CONFIGURAÇÕES INICIAIS E INICIALIZAÇÃO
 # ============================================
 if "tema_mode" not in st.session_state:
     st.session_state["tema_mode"] = "claro"
@@ -43,6 +43,40 @@ if "perguntas_ativas" not in st.session_state:
     st.session_state["perguntas_ativas"] = []
 if "botao_flutuante" not in st.session_state:
     st.session_state["botao_flutuante"] = False
+if "dados_antigos" not in st.session_state:
+    st.session_state["dados_antigos"] = None
+if "etapa" not in st.session_state:
+    st.session_state["etapa"] = "1. Protocolo"
+if "protocolo" not in st.session_state:
+    st.session_state["protocolo"] = ""
+if "tipo" not in st.session_state:
+    st.session_state["tipo"] = "Loteamento"
+if "interessado" not in st.session_state:
+    st.session_state["interessado"] = ""
+if "n_lotes" not in st.session_state:
+    st.session_state["n_lotes"] = 1
+if "matriculas" not in st.session_state:
+    st.session_state["matriculas"] = ""
+if "analista" not in st.session_state:
+    st.session_state["analista"] = ""
+if "matricula_analista" not in st.session_state:
+    st.session_state["matricula_analista"] = ""
+if "setor" not in st.session_state:
+    st.session_state["setor"] = ""
+if "n_analise" not in st.session_state:
+    st.session_state["n_analise"] = ""
+if "pendencias_manuais" not in st.session_state:
+    st.session_state["pendencias_manuais"] = {}
+if "respostas_temp" not in st.session_state:
+    st.session_state["respostas_temp"] = {}
+if "observacoes_temp" not in st.session_state:
+    st.session_state["observacoes_temp"] = {}
+if "respostas_analise" not in st.session_state:
+    st.session_state["respostas_analise"] = {}
+if "observacoes_analise" not in st.session_state:
+    st.session_state["observacoes_analise"] = {}
+if "pendencias_analise" not in st.session_state:
+    st.session_state["pendencias_analise"] = {}
 
 HASH_SALT = "proanalise_salt_2024"
 
@@ -197,7 +231,6 @@ def carregar_perguntas_por_tipo(tipo_empreendimento, tipo_analise):
     # Mapeamento para arquivos de Desmembramentos
     if tipo_empreendimento == "Desmembramentos":
         # Define o nome do arquivo baseado no tipo_analise (em minúsculas, sem acentos)
-        # Mapeamento de nomes para arquivos
         mapa_arquivos = {
             "Retificação": "retificacao.txt",
             "Desdobro de áreas": "desdobro.txt",
@@ -542,44 +575,6 @@ def proxima_pergunta_nao_respondida(respostas, perguntas):
 # ============================================
 def resposta_preenchida(valor):
     return valor not in ("", None, "Selecione...")
-
-def inicializar_estados():
-    if "dados_antigos" not in st.session_state:
-        st.session_state["dados_antigos"] = None
-    if "etapa" not in st.session_state:
-        st.session_state["etapa"] = "1. Protocolo"
-    if "protocolo" not in st.session_state:
-        st.session_state["protocolo"] = ""
-    if "tipo" not in st.session_state:
-        st.session_state["tipo"] = "Loteamento"
-    if "tipo_analise" not in st.session_state:
-        st.session_state["tipo_analise"] = "Aceite urbanístico"
-    if "interessado" not in st.session_state:
-        st.session_state["interessado"] = ""
-    if "n_lotes" not in st.session_state:
-        st.session_state["n_lotes"] = 1
-    if "matriculas" not in st.session_state:
-        st.session_state["matriculas"] = ""
-    if "analista" not in st.session_state:
-        st.session_state["analista"] = ""
-    if "matricula_analista" not in st.session_state:
-        st.session_state["matricula_analista"] = ""
-    if "setor" not in st.session_state:
-        st.session_state["setor"] = ""
-    if "n_analise" not in st.session_state:
-        st.session_state["n_analise"] = ""
-    if "pendencias_manuais" not in st.session_state:
-        st.session_state["pendencias_manuais"] = {}
-    if "respostas_temp" not in st.session_state:
-        st.session_state["respostas_temp"] = {}
-    if "observacoes_temp" not in st.session_state:
-        st.session_state["observacoes_temp"] = {}
-    if "respostas_analise" not in st.session_state:
-        st.session_state["respostas_analise"] = {}
-    if "observacoes_analise" not in st.session_state:
-        st.session_state["observacoes_analise"] = {}
-    if "pendencias_analise" not in st.session_state:
-        st.session_state["pendencias_analise"] = {}
 
 # ============================================
 # CARREGAR TEMA (CLARO/ESCURO)
@@ -1061,6 +1056,7 @@ if tem_permissao(2):
 if tem_permissao(3):
     menus_disponiveis.extend(menus_nivel3)
 
+# Garantir que a etapa atual esteja na lista
 if st.session_state["etapa"] not in menus_disponiveis:
     st.session_state["etapa"] = menus_disponiveis[0]
 
@@ -1151,57 +1147,31 @@ def render_progresso(preenchidas, total, pct, destino):
     """
     destino.markdown(html, unsafe_allow_html=True)
 
-def resposta_preenchida(valor):
-    return valor not in ("", None, "Selecione...")
-
-def inicializar_estados():
-    if "dados_antigos" not in st.session_state:
-        st.session_state["dados_antigos"] = None
-    if "etapa" not in st.session_state:
-        st.session_state["etapa"] = "1. Protocolo"
-    if "protocolo" not in st.session_state:
-        st.session_state["protocolo"] = ""
-    if "tipo" not in st.session_state:
-        st.session_state["tipo"] = "Loteamento"
-    if "tipo_analise" not in st.session_state:
-        st.session_state["tipo_analise"] = "Aceite urbanístico"
-    if "interessado" not in st.session_state:
-        st.session_state["interessado"] = ""
-    if "n_lotes" not in st.session_state:
-        st.session_state["n_lotes"] = 1
-    if "matriculas" not in st.session_state:
-        st.session_state["matriculas"] = ""
-    if "analista" not in st.session_state:
-        st.session_state["analista"] = ""
-    if "matricula_analista" not in st.session_state:
-        st.session_state["matricula_analista"] = ""
-    if "setor" not in st.session_state:
-        st.session_state["setor"] = ""
-    if "n_analise" not in st.session_state:
-        st.session_state["n_analise"] = ""
-    if "pendencias_manuais" not in st.session_state:
-        st.session_state["pendencias_manuais"] = {}
-    if "respostas_temp" not in st.session_state:
-        st.session_state["respostas_temp"] = {}
-    if "observacoes_temp" not in st.session_state:
-        st.session_state["observacoes_temp"] = {}
-    if "respostas_analise" not in st.session_state:
-        st.session_state["respostas_analise"] = {}
-    if "observacoes_analise" not in st.session_state:
-        st.session_state["observacoes_analise"] = {}
-    if "pendencias_analise" not in st.session_state:
-        st.session_state["pendencias_analise"] = {}
-    if "analise_ativa" not in st.session_state:
-        st.session_state["analise_ativa"] = False
-    if "analise_concluida" not in st.session_state:
-        st.session_state["analise_concluida"] = False
-    if "tempo_inicio" not in st.session_state:
-        st.session_state["tempo_inicio"] = None
-    if "tempo_fim" not in st.session_state:
-        st.session_state["tempo_fim"] = None
+# ============================================
+# FUNÇÕES PRINCIPAIS (definição global de perguntas)
+# ============================================
+# Carregar perguntas dinâmicas (agora após inicialização)
+if st.session_state.get("tipo") and st.session_state.get("tipo_analise"):
+    perguntas = carregar_perguntas_por_tipo(st.session_state["tipo"], st.session_state["tipo_analise"])
+else:
+    perguntas = []
 
 # ============================================
-# FUNÇÕES PRINCIPAIS
+# Título principal
+# ============================================
+col_logo, col_titulo = st.columns([1, 5])
+with col_logo:
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=100)
+with col_titulo:
+    st.title("📐 Proanalise v1.622")
+    st.caption("Sistema de análise urbanística padronizada com geração de parecer técnico")
+
+# Atualizar tema
+tema = carregar_tema()
+
+# ============================================
+# FUNÇÕES PRINCIPAIS (definição dependente de perguntas)
 # ============================================
 def definir_conclusao(respostas, pendencias_manuais=None):
     # Primeiro verifica se há perguntas pendentes
@@ -1368,29 +1338,6 @@ def proxima_pergunta_nao_respondida(respostas, perguntas):
     return None, None
 
 # ============================================
-# INICIALIZAÇÃO E CABEÇALHO
-# ============================================
-inicializar_estados()
-
-# Carregar perguntas dinâmicas
-if st.session_state.get("tipo") and st.session_state.get("tipo_analise"):
-    perguntas = carregar_perguntas_por_tipo(st.session_state["tipo"], st.session_state["tipo_analise"])
-else:
-    perguntas = []
-
-# Título principal
-col_logo, col_titulo = st.columns([1, 5])
-with col_logo:
-    if os.path.exists("logo.png"):
-        st.image("logo.png", width=100)
-with col_titulo:
-    st.title("📐 Proanalise v1.622")
-    st.caption("Sistema de análise urbanística padronizada com geração de parecer técnico")
-
-# Atualizar tema
-tema = carregar_tema()
-
-# ============================================
 # ETAPA 1 - PROTOCOLO
 # ============================================
 if st.session_state["etapa"] == "1. Protocolo":
@@ -1416,7 +1363,6 @@ if st.session_state["etapa"] == "1. Protocolo":
     with col2:
         # Define as opções de análise conforme o tipo de empreendimento
         if tipo == "Desmembramentos":
-            # Lista de todos os tipos de análise para Desmembramentos (futuramente)
             opcoes_analise = [
                 "Retificação",
                 "Desdobro de áreas",
