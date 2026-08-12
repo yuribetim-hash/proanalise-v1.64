@@ -1,0 +1,320 @@
+GRUPO: PRÉ ANÁLISE
+ID: pre_taxa
+PERGUNTA: Apresentou a comprovação de pagamento da taxa de análise?
+OPCOES: Sim;Não;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Apresentar taxa de análise do aceite urbanístico, com comprovante de pagamento;
+
+GRUPO: PRÉ ANÁLISE
+ID: pre_doc_min
+PERGUNTA: Apresentou documentação mínima?
+OPCOES: Sim;Não;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Apresentar matrícula atualizada (90 dias), mapa do parcelamento pleiteado e memorial descritivo;
+
+GRUPO: PRÉ ANÁLISE
+ID: pre_perimetro
+PERGUNTA: O imóvel se projeta sobre área rural?
+OPCOES: Sim;Não;Não se enquadra
+CONFORMES: Não;Não se enquadra
+REGRA_Sim: O projeto de parcelamento do solo com finalidade urbana somente poderá se projetar sobre o perímetro urbano municipal.
+
+
+GRUPO: DOCUMENTAL
+ID: doc_matricula
+PERGUNTA: Apresentou matrícula(s) do empreendimento atualizada (90 dias)?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Deverá apresentar matrícula(s) atualizada(s) do empreendimento (90 dias).
+
+GRUPO: DOCUMENTAL
+ID: doc_matricula_leitura
+PERGUNTA: Realizou a leitura completa da(s) matrícula(s) do empreendimento? Apontar as observações pertinentes. Buscar por averbações restritivas impositivas e que impactem no projeto.
+OPCOES: Sim;Não;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: ****Atenção analista, realize a leitura completa das matrículas do empreendimento.
+
+GRUPO: DOCUMENTAL
+ID: doc_cnd
+PERGUNTA: Apresentou a certidão negativa de débitos municipal da(s) matrícula(s) do empreendimento?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Apresentar Certidão Negativa de Débitos Municipais em favor da(s) matrícula(s) envolvida(s) no processo
+
+GRUPO: DOCUMENTAL
+ID: doc_cs
+PERGUNTA: Caso CNPJ apresentou contrato social ou certidão simplificada para o responsável proprietário do empreendimento?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Apresentar o contrato social da empresa ou certidão simplificada em que seja possível verificar qual ou quais os responsáveis legais pela administração. No campo de assinatura do(s) proprietário(s) deverá indicar o(s) responsáveis pela administração conforme estabelecido em documento comprobatório;
+
+GRUPO: DOCUMENTAL
+ID: doc_drtprop
+PERGUNTA: a D.R.T apresentada é compatível quanto ao proprietário?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Apresentar o contrato social da empresa ou certidão simplificada em que seja possível verificar qual ou quais os responsáveis legais pela administração. No campo de assinatura do(s) proprietário(s) deverá indicar o(s) responsáveis pela administração conforme estabelecido em documento comprobatório;
+
+GRUPO: DOCUMENTAL
+ID: doc_drtproc
+PERGUNTA: a D.R.T apresentada é compatível quanto ao processo?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: O D.R.T deverá ser compatível ao processo pleiteado, no sentido que para retificações de área as atividades aceitas são, topografia, levantamento topográfico planimétrico, levantamento topográfico planialtimétrico, e/ou equivalentes. A(s) área(s) informadas deverão ser totalmente compatibilizadas entre mapa, memorial e D.R.T;
+
+GRUPO: DOCUMENTAL
+ID: doc_drtpag
+PERGUNTA: a D.R.T apresentada está paga, ou tem comprovante de pagamento?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: O D.R.T deverá ser válido mediante o pagamento ou a apresentação do comprovante de pagamento;
+
+GRUPO: ANALISE MAPA
+ID: conf_area_publica
+PERGUNTA: Existe alguma área pública confrontando o empreendimento?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Não;Não se enquadra
+REGRA_Não: A área do pleito confronta com terreno público municipal. Informamos que, visando assegurar a preservação do patrimônio público municipal será realizado o georreferenciamento e avaliação da área. Disponibilzar o arquivo georreferenciado conforme estabelece a IN-10 de 2024 do SEPLAN, para a verificação da não sobreposição de área publica;
+
+GRUPO: ANALISE MAPA
+ID: conf_cotas
+PERGUNTA: Todas as cotas necessárias estão descritas? indicar em observações.
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar a representação a(s) cota(s) faltante(s) necessária(s).
+
+GRUPO: ANALISE MAPA
+ID: conf_endereco
+PERGUNTA: Endereço descrito é totalmente compatível com o GEO? Se não, informar corretamente nas observações.
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar as informações do endereço do imóvel para que esteja totalmente compatível com o cadastro municipal, vide observações.
+
+GRUPO: ANALISE MAPA
+ID: conf_area_app
+PERGUNTA: Existe algum curso d'agua? representou app corretamente?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar planta de projeto para conter: Cursos d’agua, representação das Áreas de Preservação Permanente e suas dimensões de afastamento.
+
+
+GRUPO: ANALISE MAPA
+ID: conf_area_risco
+PERGUNTA: Existe alguma área da setorização de risco incidindo no empreendimento?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Não;Não se enquadra
+REGRA_Sim: Foi encaminhado pedido de parecer à Defesa Civil, por meio de memorando interno via sistema 1Doc, em razão de o terreno ser atingido por área de risco.
+
+GRUPO: ANALISE MAPA
+ID: conf_faixa_drenagem
+PERGUNTA: Existe alguma faixa de drenagem se incidindo sobre a área de interesse?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Não;Não se enquadra
+REGRA_Sim: Durante análise foi verificada a POSSÍVEL existência de tubulação de drenagem no imóvel. Foi tramitado pedido de parecer ao departamento de DRENAGEM do SEPLAN que realizará análise referente a este item, orientando assim a possível faixa de drenagem cabível.
+
+GRUPO: ANALISE MAPA
+ID: conf_area_celesc
+PERGUNTA: Existe alguma linha de transmissão de energia da Celesc no imóvel? Apresentou?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar material técnico para conter: Representação da faixa de serviço da linha de transmissão de energia presente no imóvel (CELESC). Vide manual de Procedimentos da Celesc.
+
+GRUPO: ANALISE MAPA
+ID: conf_area_tbg
+PERGUNTA: Existe alguma linha de transmissão de gás no imóvel (TBG)? Apresentou?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar material técnico para contemplar a representação da faixa de servidão da linha de transmissão de gás (TBG) existente no imóvel. Para o possível futuro alvará do empreendimento deverá apresentar, ainda, a anuência da Transportadora Brasileira Gasoduto Bolívia-Brasil S/A (TBG) referente ao gasoduto que atravessa a área do empreendimento.
+
+GRUPO: ANALISE MAPA
+ID: conf_area_eletrosul
+PERGUNTA: Existe alguma linha de transmissão de energia da Eletrosul no imóvel? Apresentou?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar material técnico para conter: Representação da faixa de serviço da linha de transmissão de energia presente no imóvel (Eletrosul). Para o possível futuro alvará do empreendimento deverá apresentar, ainda, a anuência da Eletrosul referente a linha de transmissão que atravessa a área do empreendimento.
+
+GRUPO: ANALISE MAPA
+ID: conf_area_dominio
+PERGUNTA: Existe alguma faixa de domínio rodoviário? Apresentou? informar qual em observações.
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar material técnico para conter: Representação da faixa de domínio rodoviário. Para o possível futuro alvará do empreendimento deverá apresentar, ainda, a anuência do órgão gestor da faixa de domínio para a implantação do empreendimento.
+
+GRUPO: ANALISE MAPA
+ID: conf_quadroarea
+PERGUNTA: há necessidade de representar quadro de áreas? Apresentou?	
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar planta de projeto para conter: quadro de áreas descrevendo a(s) área(s) total(is) da gleba/lote, Áreas de Preservação Permanente e áreas de restrição;
+
+GRUPO: ANALISE MAPA
+ID: conf_quadroverti
+PERGUNTA: Apresentou quadro de vértices? Está compatível com a IN-10?	
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não:Adequar planta de projeto para conter: quadro de vértices, contendo suas medidas lineares (frentes, fundos e laterais), as coordenadas em SIRGAS 2000 / UTM 22S de cada ponto dos vértices e dados dos confrontantes (número da matrícula ou nome e CPF);
+
+GRUPO: ANALISE MAPA
+ID: conf_benfeitorias
+PERGUNTA: Representou as benfeitorias averbadas?	
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não:Adequar planta de projeto para conter: representação simplificada das edificações existentes, com a área de projeção em metros quadrados, quando averbado em matrícula (regular ou irregular);
+
+GRUPO: ANALISE MAPA
+ID: conf_benfeitorias_app
+PERGUNTA: Representou as benfeitorias averbadas dentro de APP?	
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Não;Não se enquadra
+REGRA_sim:Adequar Considerando que a Edificação averbada foi alocada dentro de área de preservação permanente, informo que faremos o envio do processo para a Fundema para a verificação da possível necessidade de regularização ambiental. A tramitação será realizada neste mesmo processo, favor atentar as movimentação no sistema;
+
+
+GRUPO: ANALISE MAPA
+ID: conf_raio
+PERGUNTA: Respeitou o Raio de curvatura proporcional ao ângulo?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar raio de curvatura no(s) lote(s) de esquina:
+       Nos lotes de esquina, a intersecção dos dois alinhamentos de muro se dará por um arco de círculo obedecendo aos seguintes parâmetros. Deverá ser resguardada a área para adequação de raio de curvatura através de faixa não edificante, ou retificação de área, desafetando a área do raio de curvatura;
+       I - até 15 graus: 2 m (dois metros) de raio mínimo;
+       II - 15,01 a 45 graus: 3 m (três metros) de raio mínimo;
+       III - 45,01 a 60 graus: 4 m (quatro metros) de raio mínimo;
+       IV - 60,01 a 105 graus: 6 m (seis metros) de raio mínimo;
+       V - 105,01 a 120 graus: 8 m (oito metros) de raio mínimo;
+       VI - 120,01 a 135 graus: 10 m (dez metros) de raio mínimo;
+       VII - maior que 135 graus: 12 m (doze metros);
+
+GRUPO: ANALISE MAPA
+ID: conf_gabarito
+PERGUNTA: Respeitou o gabarito oficial para a rua? Informar o gabarito correto nas observações.
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar o gabarito viário para que esteja compatível oficialmente.  O gabarito da Rua - é - m de pista e - m de passeio. Deverá ser resguardada a área para adequação de gabarito, através de faixa não edificante, ou retificação com alteração de área, desafetando a área para adequação do gabarito mediante doação de área;
+    • Obs 1.: A área non aedificandi a ser apresentada nos mapas e memoriais, deve estar contabilizada na área dos parcelamentos, pois a mesma está contida dentro do imóvel. Deverá representar em mapa com “hachura” e dimensões.
+    • Obs 2.: Caso pretenda realizar a doação da área para adequação de gabarito deverá: Apresentar termo de doação reconhecido em firma ou assinado digitalmente, (mediante a apresentação do arquivo digital) para passeio e/ou rua, quando houver necessidade de adequar aos gabaritos existentes para vias oficiais e públicas. Deverá representar em mapa com “hachura” e dimensões.
+
+GRUPO: ANALISE MAPA
+ID: conf_extensao
+PERGUNTA: Respeitou a extensão oficial para a rua de acesso? Amarração está correta? Informar a extensão oficial nas observações.
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar a representação da extensão oficial do sistema viário para que esteja compatível oficialmente.
+
+GRUPO: ANALISE MAPA
+ID: conf_assinaturas
+PERGUNTA: Apresentou campos para todas as assinaturas necessárias?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Apresentar os campos de assinaturas para todos os proprietários da(s) matrículas do pleito.
+
+GRUPO: ANALISE MAPA
+ID: conf_orientacaonorte
+PERGUNTA: o mapa encontra-se corretamente rotacionado ao norte?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Rotacionar desenho em plantas, preservando orientação NORTE, tanto em mapa como em imagem de localização;
+
+GRUPO: ANALISE MAPA
+ID: conf_confrontantes
+PERGUNTA: Indicou todas as confrontações do imóvel?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar planta de projeto para conter: Códigos das parcelas confrontantes, expressos pelo número da matrícula ou nome completo e número do cadastro de pessoa física (CPF) do confrontante (na inexistência do número da matrícula do imóvel confrontante). Adequar planta de projeto para conter: (s) logradouro(s) confrontante(s)(caso exista), com as devidas cotas de gabarito definidas por lei;
+
+GRUPO: ANALISE MAPA
+ID: conf_geoimage
+PERGUNTA: Apresentou a imagem aérea com a projeção da(s) matrícula(s)?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Representar em mapa a imagem aérea com a projeção da(s) matrícula(s) envolvidas no empreendimento.
+
+GRUPO: ANALISE MEMORIAL
+ID: conf_cabeçalho
+PERGUNTA: Apresentou o cabeçalho completo contendo, endereço completo, área e perímetro?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar memorial descritivo para conter: cabeçalho com endereço completo, área e perímetro do lote;
+   
+GRUPO: ANALISE MEMORIAL
+ID: conf_memorialamarr
+PERGUNTA: apresentou informações da amarração do imóvel?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar memorial descritivo para conter: Adequar memorial descritivo para conter cabeçalho com: cota de amarração do(s) lote(s)/gleba com a via pública mais próxima;
+
+GRUPO: ANALISE MEMORIAL
+ID: conf_memorialtabela
+PERGUNTA: apresentou adequadamente a tabela de vértices no memorial?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar memorial descritivo para conter:tabela de vértices com dados técnicos contendo o código do vértice e suas respectivas coordenadas geodésicas, número da matrícula dos confrontantes (na inexistência do código da parcela, prioritariamente, o número de matrícula do confrontante ou o nome completo e número do CPF do confrontante), a distância projetada do vértice ao seu ponto de vante no sentido horário. A descrição tabular da parcela ou imóvel deve iniciar no primeiro vértice de confrontação com o sistema viário ou acesso a este e seguir no sentido horário;
+
+GRUPO: ANALISE MEMORIAL
+ID: conf_memoriallot
+PERGUNTA: o lote pertence a loteamento?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: No cabeçalho do memorial citar que o presente lote encontra-se no loteamento;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+GRUPO: ANALISE GEO
+ID: conf_arquivogeo
+PERGUNTA: Arquivo DXF Recebido está de acordo para analisar?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Anexar digitalmente arquivo completo urbanístico referente ao processo (atualizado), Georreferenciado para Sirgas 2000 UTM 22 S, em formato DXF 2013;
+
+GRUPO: ANALISE GEO
+ID: conf_areaarquivogeo
+PERGUNTA: área do arquivo compatível com memorial e mapa?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: A área(m²) do empreendimento informada em material técnico difere da área no arquivo georreferenciado. Deverá sanar a incompatibilidade.
+
+GRUPO: ANALISE GEO
+ID: conf_perimetroarquivogeo
+PERGUNTA: perimetro do arquivo compatível com memorial e mapa?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: O perímetro (m) do lote informado em mapa/memorial difere da área no arquivo georreferenciado. Deverá sanar a incompatibilidade.
+
+GRUPO: ANALISE GEO
+ID: conf_sobreparquivogeo
+PERGUNTA: área do lote no arquivo sobrepõe alguma área pública ou arruamento oficial? (detalhar em observações)
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: A projeção do empreendimento no arquivo georreferenciado apresenta sobreposição de área pública.
+
+
+

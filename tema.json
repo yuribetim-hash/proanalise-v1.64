@@ -1,0 +1,33 @@
+{
+    "cores": {
+        "primaria": "#0a2a3a",
+        "primaria_clara": "#1a5276",
+        "primaria_muito_escura": "#051a24",
+        "secundaria": "#2c6b96",
+        "sucesso": "#0d6e2e",
+        "erro": "#b42318",
+        "alerta": "#b54708",
+        "info": "#175cd3",
+        "fundo_claro": "#f8fafd",
+        "fundo_branco": "#ffffff",
+        "texto_principal": "#1a1a1a",
+        "texto_secundario": "#2c3e50",
+        "texto_caption": "#666666",
+        "texto_titulo": "#051a24",
+        "fundo_app": "linear-gradient(135deg, #e8f0fe 0%, #d4e4fc 100%)",
+        "sidebar_fundo": "linear-gradient(180deg, #0a2a3a 0%, #051a24 100%)"
+    },
+    "status": {
+        "conforme": {"fundo": "#ecfdf3", "borda": "#067647", "texto": "#067647", "icone": "✅"},
+        "inconforme": {"fundo": "#fef3f2", "borda": "#b42318", "texto": "#7a271a", "icone": "⛔"},
+        "pendente": {"fundo": "#fffaeb", "borda": "#b54708", "texto": "#7a4a0a", "icone": "⏳"},
+        "nao_se_enquadra": {"fundo": "#eff6ff", "borda": "#175cd3", "texto": "#0e4a8a", "icone": "ℹ️"}
+    },
+    "botoes": {
+        "primario_fundo": "#0d6e2e",
+        "primario_fundo_hover": "#0f8a3a",
+        "secundario_fundo": "#0a2a3a",
+        "secundario_fundo_hover": "#1a5276",
+        "texto": "#ffffff"
+    }
+}
