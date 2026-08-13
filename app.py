@@ -98,23 +98,19 @@ def fazer_backup_automatico():
         backup_file = os.path.join(pasta_backup, f"backup_{timestamp}.json")
         
         dados_backup = {
-            # Dados do protocolo
             "protocolo": st.session_state.get("protocolo", ""),
             "tipo": st.session_state.get("tipo", ""),
             "tipo_analise": st.session_state.get("tipo_analise", ""),
             "interessado": st.session_state.get("interessado", ""),
             "n_lotes": st.session_state.get("n_lotes", 1),
             "matriculas": st.session_state.get("matriculas", ""),
-            # Dados do analista
             "analista": st.session_state.get("analista", ""),
             "matricula_analista": st.session_state.get("matricula_analista", ""),
             "setor": st.session_state.get("setor", ""),
             "n_analise": st.session_state.get("n_analise", ""),
-            # Respostas e observações
             "respostas_analise": st.session_state.get("respostas_analise", {}),
             "observacoes_analise": st.session_state.get("observacoes_analise", {}),
             "pendencias_analise": st.session_state.get("pendencias_analise", {}),
-            # Estado da análise
             "analise_ativa": st.session_state.get("analise_ativa", False),
             "analise_concluida": st.session_state.get("analise_concluida", False),
             "tempo_inicio": st.session_state.get("tempo_inicio", None),
@@ -128,7 +124,6 @@ def fazer_backup_automatico():
         with open(backup_file, "w", encoding="utf-8") as f:
             json.dump(dados_backup, f, indent=4, ensure_ascii=False)
         
-        # Manter apenas os 10 backups mais recentes
         backups = sorted([f for f in os.listdir(pasta_backup) if f.startswith("backup_")])
         if len(backups) > 10:
             for old_backup in backups[:-10]:
@@ -259,9 +254,7 @@ def carregar_perguntas_por_tipo(tipo_empreendimento, tipo_analise):
     Carrega o arquivo de perguntas de acordo com o tipo de empreendimento e análise.
     Para Desmembramentos, carrega o arquivo específico do subtipo (ex: retificacao.txt)
     """
-    # Mapeamento para arquivos de Desmembramentos
     if tipo_empreendimento == "Desmembramentos":
-        # Define o nome do arquivo baseado no tipo_analise (em minúsculas, sem acentos)
         mapa_arquivos = {
             "Retificação": "retificacao.txt",
             "Desdobro de áreas": "desdobro.txt",
@@ -277,16 +270,13 @@ def carregar_perguntas_por_tipo(tipo_empreendimento, tipo_analise):
             "Anuência rural": "anuencia_rural.txt"
         }
         nome_arquivo = mapa_arquivos.get(tipo_analise, "retificacao.txt")
-        # Tenta carregar da pasta perguntas/ ou raiz
         for caminho in [os.path.join("perguntas", nome_arquivo), nome_arquivo]:
             if os.path.exists(caminho):
                 return carregar_perguntas_txt(caminho)
-        # Fallback: tenta carregar um arquivo genérico para Desmembramentos
         if os.path.exists("perguntas/desmembramentos.txt"):
             return carregar_perguntas_txt("perguntas/desmembramentos.txt")
         elif os.path.exists("desmembramentos.txt"):
             return carregar_perguntas_txt("desmembramentos.txt")
-        # Fallback geral
         if os.path.exists("perguntas.txt"):
             return carregar_perguntas_txt("perguntas.txt")
         st.error(f"Arquivo de perguntas para '{tipo_analise}' não encontrado.")
@@ -296,7 +286,7 @@ def carregar_perguntas_por_tipo(tipo_empreendimento, tipo_analise):
     if tipo_analise == "Aceite urbanístico":
         if tipo_empreendimento == "Loteamento":
             arquivo = "perguntas/loteamento_aceite.txt"
-        else:  # Condomínio
+        else:
             arquivo = "perguntas/condominio_aceite.txt"
     else:  # Alvará
         if tipo_empreendimento == "Loteamento":
@@ -307,7 +297,6 @@ def carregar_perguntas_por_tipo(tipo_empreendimento, tipo_analise):
     if os.path.exists(arquivo):
         return carregar_perguntas_txt(arquivo)
     
-    # Fallback
     if os.path.exists("perguntas.txt"):
         return carregar_perguntas_txt("perguntas.txt")
     
@@ -1125,20 +1114,41 @@ with col_restaurar:
                 st.session_state["observacoes_temp"] = dados_restaurados.get("observacoes_analise", {})
                 st.session_state["pendencias_manuais"] = dados_restaurados.get("pendencias_analise", {})
                 
-                # Também atualiza as variáveis de análise para consistência
+                # Atualiza também as variáveis de análise
                 st.session_state["respostas_analise"] = dados_restaurados.get("respostas_analise", {})
                 st.session_state["observacoes_analise"] = dados_restaurados.get("observacoes_analise", {})
                 st.session_state["pendencias_analise"] = dados_restaurados.get("pendencias_analise", {})
                 
-                # Garante que o tipo de análise esteja correto e recarrega as perguntas
+                # Garante que o tipo e análise sejam restaurados
                 st.session_state["tipo"] = dados_restaurados.get("tipo", "Loteamento")
                 st.session_state["tipo_analise"] = dados_restaurados.get("tipo_analise", "Aceite urbanístico")
                 
+                # Se a análise foi concluída, desativa a análise ativa; senão, reativa
+                if dados_restaurados.get("analise_concluida", False):
+                    st.session_state["analise_ativa"] = False
+                    st.session_state["analise_concluida"] = True
+                    # Se a etapa restaurada for uma de análise, redireciona para a geração
+                    if st.session_state["etapa"] in ["3. Análise", "4. Revisão"]:
+                        st.session_state["etapa"] = "5. Gerar parecer"
+                else:
+                    # Se há respostas, reativa a análise
+                    if dados_restaurados.get("respostas_analise"):
+                        st.session_state["analise_ativa"] = True
+                        st.session_state["analise_concluida"] = False
+                        # Se a etapa não for compatível, vai para a análise
+                        if st.session_state["etapa"] not in ["3. Análise", "4. Revisão"]:
+                            st.session_state["etapa"] = "3. Análise"
+                    else:
+                        st.session_state["analise_ativa"] = False
+                        st.session_state["analise_concluida"] = False
+                        st.session_state["etapa"] = "1. Protocolo"
+                
+                st.success("✅ Análise restaurada com sucesso!")
             st.rerun()
 
 st.sidebar.markdown("---")
 
-# Anotações pessoais do analista (movido para sidebar)
+# Anotações pessoais do analista
 with st.sidebar.expander("📓 Anotações Pessoais", expanded=False):
     anotacao_atual = st.session_state["anotacoes_pessoais"].get(st.session_state.get("protocolo", ""), "")
     nova_anotacao = st.text_area("Não vão para o parecer", value=anotacao_atual, height=150)
@@ -1198,7 +1208,7 @@ def render_progresso(preenchidas, total, pct, destino):
 # ============================================
 # FUNÇÕES PRINCIPAIS (definição global de perguntas)
 # ============================================
-# Carregar perguntas dinâmicas (após inicialização)
+# Carregar perguntas dinâmicas
 if st.session_state.get("tipo") and st.session_state.get("tipo_analise"):
     perguntas = carregar_perguntas_por_tipo(st.session_state["tipo"], st.session_state["tipo_analise"])
 else:
@@ -1378,13 +1388,6 @@ def resumo_status_pergunta(p, resposta):
         return "inconforme"
     return "neutro"
 
-def proxima_pergunta_nao_respondida(respostas, perguntas):
-    for idx, p in enumerate(perguntas):
-        resposta = respostas.get(p["id"])
-        if resposta in ("", None, "Selecione..."):
-            return p["id"], idx
-    return None, None
-
 # ============================================
 # ETAPA 1 - PROTOCOLO
 # ============================================
@@ -1400,7 +1403,6 @@ if st.session_state["etapa"] == "1. Protocolo":
 
     col1, col2 = st.columns(2)
     with col1:
-        # Tipos de empreendimento com 3 opções
         opcoes_tipo = ["Loteamento", "Condomínio fechado de lotes", "Desmembramentos"]
         indice_tipo = opcoes_tipo.index(st.session_state["tipo"]) if st.session_state["tipo"] in opcoes_tipo else 0
         tipo = st.selectbox("Tipo do Empreendimento", opcoes_tipo, index=indice_tipo, key="tipo_select")
@@ -1409,26 +1411,17 @@ if st.session_state["etapa"] == "1. Protocolo":
             # Recarregar perguntas
             perguntas = carregar_perguntas_por_tipo(tipo, st.session_state["tipo_analise"])
     with col2:
-        # Define as opções de análise conforme o tipo de empreendimento
         if tipo == "Desmembramentos":
             opcoes_analise = [
-                "Retificação",
-                "Desdobro de áreas",
-                "Unificação de áreas",
-                "Alteração de divisas",
-                "Estremação",
-                "Usucapião",
-                "Retificação com desdobro",
-                "Retificação com alteração de divisas",
-                "Retificação com unificação",
-                "Unificação com desdobro",
-                "Desdobro para anexação",
-                "Anuência rural"
+                "Retificação", "Desdobro de áreas", "Unificação de áreas",
+                "Alteração de divisas", "Estremação", "Usucapião",
+                "Retificação com desdobro", "Retificação com alteração de divisas",
+                "Retificação com unificação", "Unificação com desdobro",
+                "Desdobro para anexação", "Anuência rural"
             ]
         else:
             opcoes_analise = ["Aceite urbanístico", "Alvará"]
         
-        # Garantir que o estado atual esteja na lista, senão usa o primeiro
         if st.session_state["tipo_analise"] not in opcoes_analise:
             st.session_state["tipo_analise"] = opcoes_analise[0]
         
@@ -1436,7 +1429,6 @@ if st.session_state["etapa"] == "1. Protocolo":
         tipo_analise = st.selectbox("Tipo de Análise", opcoes_analise, index=indice_analise, key="tipo_analise_select")
         if tipo_analise != st.session_state["tipo_analise"]:
             st.session_state["tipo_analise"] = tipo_analise
-            # Recarregar perguntas
             perguntas = carregar_perguntas_por_tipo(tipo, tipo_analise)
     
     interessado = st.text_input("Requerente", value=st.session_state["interessado"], key="interessado_input")
@@ -1451,7 +1443,6 @@ if st.session_state["etapa"] == "1. Protocolo":
     
     st.markdown("---")
     
-    # Botões de controle de análise
     if st.session_state.get("analise_ativa"):
         st.success("🚀 Análise em andamento")
         if st.button("⏩ Continuar Análise", use_container_width=True, type="primary"):
@@ -1519,12 +1510,17 @@ elif st.session_state["etapa"] == "2. Analista":
 # ETAPA 3 - ANÁLISE
 # ============================================
 elif st.session_state["etapa"] == "3. Análise":
+    # Verifica se a análise está ativa; se não, tenta reativar se houver respostas
     if not st.session_state.get("analise_ativa", False):
-        st.error("❌ Nenhuma análise ativa. Volte à Etapa 1 e clique em 'Iniciar Análise'")
-        if st.button("← Voltar à Etapa 1"):
-            st.session_state["etapa"] = "1. Protocolo"
-            st.rerun()
-        st.stop()
+        # Tenta reativar se existir respostas
+        if st.session_state.get("respostas_analise") and not st.session_state.get("analise_concluida", False):
+            st.session_state["analise_ativa"] = True
+        else:
+            st.error("❌ Nenhuma análise ativa. Volte à Etapa 1 e clique em 'Iniciar Análise'")
+            if st.button("← Voltar à Etapa 1"):
+                st.session_state["etapa"] = "1. Protocolo"
+                st.rerun()
+            st.stop()
     
     st.header("🔍 Análise técnica")
     st.info(f"📌 Protocolo: **{st.session_state['protocolo']}** | Analista: **{st.session_state['analista']}**")
@@ -1668,12 +1664,16 @@ elif st.session_state["etapa"] == "3. Análise":
 # ETAPA 4 - REVISÃO
 # ============================================
 elif st.session_state["etapa"] == "4. Revisão":
+    # Verifica se a análise está ativa; se não, tenta reativar se houver respostas
     if not st.session_state.get("analise_ativa", False):
-        st.error("❌ Nenhuma análise ativa. Volte à Etapa 1 e clique em 'Iniciar Análise'")
-        if st.button("← Voltar à Etapa 1"):
-            st.session_state["etapa"] = "1. Protocolo"
-            st.rerun()
-        st.stop()
+        if st.session_state.get("respostas_temp") and not st.session_state.get("analise_concluida", False):
+            st.session_state["analise_ativa"] = True
+        else:
+            st.error("❌ Nenhuma análise ativa. Volte à Etapa 1 e clique em 'Iniciar Análise'")
+            if st.button("← Voltar à Etapa 1"):
+                st.session_state["etapa"] = "1. Protocolo"
+                st.rerun()
+            st.stop()
     
     st.header("📋 Revisão da análise")
     
@@ -1790,7 +1790,6 @@ elif st.session_state["etapa"] == "5. Gerar parecer":
     
     st.markdown("---")
     
-    # Botão de visualização do parecer
     with st.expander("👁️ Visualizar Parecer", expanded=False):
         html_parecer = visualizar_parecer_html(dados, respostas, observacoes, conclusao,
                                                 st.session_state["analista"], st.session_state["n_analise"],
