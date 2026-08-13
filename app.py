@@ -98,19 +98,23 @@ def fazer_backup_automatico():
         backup_file = os.path.join(pasta_backup, f"backup_{timestamp}.json")
         
         dados_backup = {
+            # Dados do protocolo
             "protocolo": st.session_state.get("protocolo", ""),
             "tipo": st.session_state.get("tipo", ""),
             "tipo_analise": st.session_state.get("tipo_analise", ""),
             "interessado": st.session_state.get("interessado", ""),
             "n_lotes": st.session_state.get("n_lotes", 1),
             "matriculas": st.session_state.get("matriculas", ""),
+            # Dados do analista
             "analista": st.session_state.get("analista", ""),
             "matricula_analista": st.session_state.get("matricula_analista", ""),
             "setor": st.session_state.get("setor", ""),
             "n_analise": st.session_state.get("n_analise", ""),
+            # Respostas e observações
             "respostas_analise": st.session_state.get("respostas_analise", {}),
             "observacoes_analise": st.session_state.get("observacoes_analise", {}),
             "pendencias_analise": st.session_state.get("pendencias_analise", {}),
+            # Estado da análise
             "analise_ativa": st.session_state.get("analise_ativa", False),
             "analise_concluida": st.session_state.get("analise_concluida", False),
             "tempo_inicio": st.session_state.get("tempo_inicio", None),
@@ -124,6 +128,7 @@ def fazer_backup_automatico():
         with open(backup_file, "w", encoding="utf-8") as f:
             json.dump(dados_backup, f, indent=4, ensure_ascii=False)
         
+        # Manter apenas os 10 backups mais recentes
         backups = sorted([f for f in os.listdir(pasta_backup) if f.startswith("backup_")])
         if len(backups) > 10:
             for old_backup in backups[:-10]:
@@ -1145,6 +1150,8 @@ with col_restaurar:
                 
                 st.success("✅ Análise restaurada com sucesso!")
             st.rerun()
+    else:
+        st.sidebar.info("Nenhum backup disponível. Salve uma análise primeiro.")
 
 st.sidebar.markdown("---")
 
