@@ -81,6 +81,26 @@ if "pendencias_analise" not in st.session_state:
 HASH_SALT = "proanalise_salt_2024"
 
 # ============================================
+# FUNÇÕES AUXILIARES PARA SERIALIZAÇÃO
+# ============================================
+def serialize_datetime(dt):
+    """Converte datetime para string ISO ou None"""
+    if dt is None:
+        return None
+    if isinstance(dt, datetime):
+        return dt.isoformat()
+    return dt
+
+def deserialize_datetime(dt_str):
+    """Converte string ISO para datetime ou None"""
+    if dt_str is None:
+        return None
+    try:
+        return datetime.fromisoformat(dt_str)
+    except:
+        return None
+
+# ============================================
 # FUNÇÕES DE BACKUP
 # ============================================
 def fazer_backup_automatico():
@@ -98,27 +118,23 @@ def fazer_backup_automatico():
         backup_file = os.path.join(pasta_backup, f"backup_{timestamp}.json")
         
         dados_backup = {
-            # Dados do protocolo
             "protocolo": st.session_state.get("protocolo", ""),
             "tipo": st.session_state.get("tipo", ""),
             "tipo_analise": st.session_state.get("tipo_analise", ""),
             "interessado": st.session_state.get("interessado", ""),
             "n_lotes": st.session_state.get("n_lotes", 1),
             "matriculas": st.session_state.get("matriculas", ""),
-            # Dados do analista
             "analista": st.session_state.get("analista", ""),
             "matricula_analista": st.session_state.get("matricula_analista", ""),
             "setor": st.session_state.get("setor", ""),
             "n_analise": st.session_state.get("n_analise", ""),
-            # Respostas e observações
             "respostas_analise": st.session_state.get("respostas_analise", {}),
             "observacoes_analise": st.session_state.get("observacoes_analise", {}),
             "pendencias_analise": st.session_state.get("pendencias_analise", {}),
-            # Estado da análise
             "analise_ativa": st.session_state.get("analise_ativa", False),
             "analise_concluida": st.session_state.get("analise_concluida", False),
-            "tempo_inicio": st.session_state.get("tempo_inicio", None),
-            "tempo_fim": st.session_state.get("tempo_fim", None),
+            "tempo_inicio": serialize_datetime(st.session_state.get("tempo_inicio")),
+            "tempo_fim": serialize_datetime(st.session_state.get("tempo_fim")),
             "etapa": st.session_state.get("etapa", ""),
             "marcadas_revisao": list(st.session_state.get("marcadas_revisao", set())),
             "anotacoes_pessoais": st.session_state.get("anotacoes_pessoais", {}),
@@ -161,8 +177,8 @@ def salvar_backup_manual():
         "pendencias_analise": st.session_state.get("pendencias_analise", {}),
         "analise_ativa": st.session_state.get("analise_ativa", False),
         "analise_concluida": st.session_state.get("analise_concluida", False),
-        "tempo_inicio": st.session_state.get("tempo_inicio", None),
-        "tempo_fim": st.session_state.get("tempo_fim", None),
+        "tempo_inicio": serialize_datetime(st.session_state.get("tempo_inicio")),
+        "tempo_fim": serialize_datetime(st.session_state.get("tempo_fim")),
         "etapa": st.session_state.get("etapa", ""),
         "marcadas_revisao": list(st.session_state.get("marcadas_revisao", set())),
         "anotacoes_pessoais": st.session_state.get("anotacoes_pessoais", {}),
@@ -1124,23 +1140,26 @@ with col_restaurar:
                 st.session_state["observacoes_analise"] = dados_restaurados.get("observacoes_analise", {})
                 st.session_state["pendencias_analise"] = dados_restaurados.get("pendencias_analise", {})
                 
+                # Converte datas de string para datetime
+                st.session_state["tempo_inicio"] = deserialize_datetime(dados_restaurados.get("tempo_inicio"))
+                st.session_state["tempo_fim"] = deserialize_datetime(dados_restaurados.get("tempo_fim"))
+                
                 # Garante que o tipo e análise sejam restaurados
                 st.session_state["tipo"] = dados_restaurados.get("tipo", "Loteamento")
                 st.session_state["tipo_analise"] = dados_restaurados.get("tipo_analise", "Aceite urbanístico")
+                # Restaura marcadas_revisao (set)
+                st.session_state["marcadas_revisao"] = set(dados_restaurados.get("marcadas_revisao", []))
                 
                 # Se a análise foi concluída, desativa a análise ativa; senão, reativa
                 if dados_restaurados.get("analise_concluida", False):
                     st.session_state["analise_ativa"] = False
                     st.session_state["analise_concluida"] = True
-                    # Se a etapa restaurada for uma de análise, redireciona para a geração
                     if st.session_state["etapa"] in ["3. Análise", "4. Revisão"]:
                         st.session_state["etapa"] = "5. Gerar parecer"
                 else:
-                    # Se há respostas, reativa a análise
                     if dados_restaurados.get("respostas_analise"):
                         st.session_state["analise_ativa"] = True
                         st.session_state["analise_concluida"] = False
-                        # Se a etapa não for compatível, vai para a análise
                         if st.session_state["etapa"] not in ["3. Análise", "4. Revisão"]:
                             st.session_state["etapa"] = "3. Análise"
                     else:
