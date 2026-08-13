@@ -98,10 +98,27 @@ def fazer_backup_automatico():
         backup_file = os.path.join(pasta_backup, f"backup_{timestamp}.json")
         
         dados_backup = {
+            # Dados do protocolo
             "protocolo": st.session_state.get("protocolo", ""),
+            "tipo": st.session_state.get("tipo", ""),
+            "tipo_analise": st.session_state.get("tipo_analise", ""),
+            "interessado": st.session_state.get("interessado", ""),
+            "n_lotes": st.session_state.get("n_lotes", 1),
+            "matriculas": st.session_state.get("matriculas", ""),
+            # Dados do analista
+            "analista": st.session_state.get("analista", ""),
+            "matricula_analista": st.session_state.get("matricula_analista", ""),
+            "setor": st.session_state.get("setor", ""),
+            "n_analise": st.session_state.get("n_analise", ""),
+            # Respostas e observações
             "respostas_analise": st.session_state.get("respostas_analise", {}),
             "observacoes_analise": st.session_state.get("observacoes_analise", {}),
             "pendencias_analise": st.session_state.get("pendencias_analise", {}),
+            # Estado da análise
+            "analise_ativa": st.session_state.get("analise_ativa", False),
+            "analise_concluida": st.session_state.get("analise_concluida", False),
+            "tempo_inicio": st.session_state.get("tempo_inicio", None),
+            "tempo_fim": st.session_state.get("tempo_fim", None),
             "etapa": st.session_state.get("etapa", ""),
             "marcadas_revisao": list(st.session_state.get("marcadas_revisao", set())),
             "anotacoes_pessoais": st.session_state.get("anotacoes_pessoais", {}),
@@ -111,6 +128,7 @@ def fazer_backup_automatico():
         with open(backup_file, "w", encoding="utf-8") as f:
             json.dump(dados_backup, f, indent=4, ensure_ascii=False)
         
+        # Manter apenas os 10 backups mais recentes
         backups = sorted([f for f in os.listdir(pasta_backup) if f.startswith("backup_")])
         if len(backups) > 10:
             for old_backup in backups[:-10]:
@@ -129,9 +147,22 @@ def salvar_backup_manual():
     
     dados_backup = {
         "protocolo": st.session_state.get("protocolo", ""),
+        "tipo": st.session_state.get("tipo", ""),
+        "tipo_analise": st.session_state.get("tipo_analise", ""),
+        "interessado": st.session_state.get("interessado", ""),
+        "n_lotes": st.session_state.get("n_lotes", 1),
+        "matriculas": st.session_state.get("matriculas", ""),
+        "analista": st.session_state.get("analista", ""),
+        "matricula_analista": st.session_state.get("matricula_analista", ""),
+        "setor": st.session_state.get("setor", ""),
+        "n_analise": st.session_state.get("n_analise", ""),
         "respostas_analise": st.session_state.get("respostas_analise", {}),
         "observacoes_analise": st.session_state.get("observacoes_analise", {}),
         "pendencias_analise": st.session_state.get("pendencias_analise", {}),
+        "analise_ativa": st.session_state.get("analise_ativa", False),
+        "analise_concluida": st.session_state.get("analise_concluida", False),
+        "tempo_inicio": st.session_state.get("tempo_inicio", None),
+        "tempo_fim": st.session_state.get("tempo_fim", None),
         "etapa": st.session_state.get("etapa", ""),
         "marcadas_revisao": list(st.session_state.get("marcadas_revisao", set())),
         "anotacoes_pessoais": st.session_state.get("anotacoes_pessoais", {}),
@@ -1083,9 +1114,26 @@ with col_restaurar:
             caminho_backup = os.path.join("dados", "backups", backup_selecionado)
             with open(caminho_backup, "r", encoding="utf-8") as f:
                 dados_restaurados = json.load(f)
+                
+                # Atualiza todas as chaves principais
                 for key, value in dados_restaurados.items():
                     if key in st.session_state:
                         st.session_state[key] = value
+                
+                # Copia para as variáveis temporárias usadas na revisão/geração
+                st.session_state["respostas_temp"] = dados_restaurados.get("respostas_analise", {})
+                st.session_state["observacoes_temp"] = dados_restaurados.get("observacoes_analise", {})
+                st.session_state["pendencias_manuais"] = dados_restaurados.get("pendencias_analise", {})
+                
+                # Também atualiza as variáveis de análise para consistência
+                st.session_state["respostas_analise"] = dados_restaurados.get("respostas_analise", {})
+                st.session_state["observacoes_analise"] = dados_restaurados.get("observacoes_analise", {})
+                st.session_state["pendencias_analise"] = dados_restaurados.get("pendencias_analise", {})
+                
+                # Garante que o tipo de análise esteja correto e recarrega as perguntas
+                st.session_state["tipo"] = dados_restaurados.get("tipo", "Loteamento")
+                st.session_state["tipo_analise"] = dados_restaurados.get("tipo_analise", "Aceite urbanístico")
+                
             st.rerun()
 
 st.sidebar.markdown("---")
@@ -1150,7 +1198,7 @@ def render_progresso(preenchidas, total, pct, destino):
 # ============================================
 # FUNÇÕES PRINCIPAIS (definição global de perguntas)
 # ============================================
-# Carregar perguntas dinâmicas (agora após inicialização)
+# Carregar perguntas dinâmicas (após inicialização)
 if st.session_state.get("tipo") and st.session_state.get("tipo_analise"):
     perguntas = carregar_perguntas_por_tipo(st.session_state["tipo"], st.session_state["tipo_analise"])
 else:
@@ -1352,7 +1400,7 @@ if st.session_state["etapa"] == "1. Protocolo":
 
     col1, col2 = st.columns(2)
     with col1:
-        # NOVO: Tipos de empreendimento com 3 opções
+        # Tipos de empreendimento com 3 opções
         opcoes_tipo = ["Loteamento", "Condomínio fechado de lotes", "Desmembramentos"]
         indice_tipo = opcoes_tipo.index(st.session_state["tipo"]) if st.session_state["tipo"] in opcoes_tipo else 0
         tipo = st.selectbox("Tipo do Empreendimento", opcoes_tipo, index=indice_tipo, key="tipo_select")
