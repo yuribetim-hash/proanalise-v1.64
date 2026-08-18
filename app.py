@@ -1519,8 +1519,15 @@ elif st.session_state["etapa"] == "3. Análise":
                         if opcoes:
                             opcoes_validas = [op for op in opcoes if op != "Selecione..."]
                             if opcoes_validas:
-                                respostas[pid] = random.choice(opcoes_validas)
-                st.session_state["respostas_analise"] = respostas
+                                # IMPORTANTE: além de salvar no dicionário de respostas,
+                                # atualiza o estado do próprio widget st.selectbox.
+                                # Sem isso, no st.rerun() o selectbox pode recuperar o
+                                # valor antigo ("Selecione...") e sobrescrever a resposta
+                                # aleatória recém-gerada.
+                                resposta_aleatoria = random.choice(opcoes_validas)
+                                respostas[pid] = resposta_aleatoria
+                                st.session_state[f"resp_{pid}"] = resposta_aleatoria
+                st.session_state["respostas_analise"] = dict(respostas)
                 st.session_state["observacoes_analise"] = observacoes
                 st.session_state["pendencias_analise"] = pendencias_manuais
                 st.rerun()
