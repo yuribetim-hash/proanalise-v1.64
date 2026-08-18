@@ -20,7 +20,7 @@ def agora_brasilia():
     return datetime.now(BRASILIA_TZ)
 
 st.set_page_config(
-    page_title="Proanalise v1.641",
+    page_title="Proanalise v1.622",
     page_icon="📐",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -121,43 +121,26 @@ def deserialize_datetime(dt_str):
 # FUNÇÃO PARA CARREGAR DADOS DE UM PROTOCOLO EXISTENTE
 # ============================================
 def carregar_analise_protocolo(protocolo):
-    """Carrega os dados de análise de um protocolo existente (arquivo de análise ou backup)."""
+    """
+    Carrega os dados de análise de um protocolo existente.
+    Prioriza backups (contêm estado completo) sobre arquivos de análise parciais.
+    """
     if not protocolo:
         return None
-    
+
     protocolo_limpo = protocolo.replace("/", "-").strip()
-    pasta = os.path.join("dados", protocolo_limpo)
-    
-    # 1. Tentar carregar do arquivo de análise mais recente (se existir)
-    if os.path.exists(pasta):
-        arquivos_analise = [f for f in os.listdir(pasta) if f.startswith("analise_") and f.endswith(".json")]
-        if arquivos_analise:
-            arquivo_mais_recente = max(arquivos_analise, key=lambda f: os.path.getmtime(os.path.join(pasta, f)))
-            caminho = os.path.join(pasta, arquivo_mais_recente)
-            with open(caminho, "r", encoding="utf-8") as f:
-                dados = json.load(f)
-            # Mapear para o formato do session_state (não temos estado no arquivo de analise, então usamos backup se disponível)
-            return {
-                "respostas_analise": dados.get("respostas", {}),
-                "observacoes_analise": dados.get("observacoes", {}),
-                "pendencias_analise": dados.get("pendencias", {}),
-                "analista": dados.get("analista", ""),
-                "matricula_analista": "",  # não temos no arquivo
-                "setor": "",
-                "n_analise": "",
-                # O estado será sobrescrito se houver backup
-            }
-    
-    # 2. Tentar carregar do backup mais recente para este protocolo
+
+    # 1. Tenta carregar do backup mais recente para este protocolo (mais completo)
     pasta_backup = os.path.join("dados", "backups")
     if os.path.exists(pasta_backup):
         backups = [f for f in os.listdir(pasta_backup) if f.startswith("backup_") and f.endswith(".json")]
         for backup in sorted(backups, reverse=True):
             caminho = os.path.join(pasta_backup, backup)
-            with open(caminho, "r", encoding="utf-8") as f:
-                dados = json.load(f)
+            try:
+                with open(caminho, "r", encoding="utf-8") as f:
+                    dados = json.load(f)
                 if dados.get("protocolo") == protocolo:
-                    # Encontrou um backup para este protocolo
+                    # Encontrou um backup completo
                     return {
                         "protocolo": dados.get("protocolo", ""),
                         "tipo": dados.get("tipo", "Loteamento"),
@@ -183,6 +166,37 @@ def carregar_analise_protocolo(protocolo):
                         "marcadas_revisao": set(dados.get("marcadas_revisao", [])),
                         "anotacoes_pessoais": dados.get("anotacoes_pessoais", {}),
                     }
+            except:
+                continue
+
+    # 2. Se não encontrou backup, tenta carregar de um arquivo de análise parcial
+    pasta = os.path.join("dados", protocolo_limpo)
+    if os.path.exists(pasta):
+        arquivos_analise = [f for f in os.listdir(pasta) if f.startswith("analise_") and f.endswith(".json")]
+        if arquivos_analise:
+            arquivo_mais_recente = max(arquivos_analise, key=lambda f: os.path.getmtime(os.path.join(pasta, f)))
+            caminho = os.path.join(pasta, arquivo_mais_recente)
+            try:
+                with open(caminho, "r", encoding="utf-8") as f:
+                    dados = json.load(f)
+                # Como o arquivo de análise não tem estado, assumimos que a análise ainda está em andamento.
+                return {
+                    "respostas_analise": dados.get("respostas", {}),
+                    "observacoes_analise": dados.get("observacoes", {}),
+                    "pendencias_analise": dados.get("pendencias", {}),
+                    "analista": dados.get("analista", ""),
+                    "matricula_analista": "",
+                    "setor": "",
+                    "n_analise": "",
+                    "analise_ativa": False,
+                    "analise_concluida": False,
+                    "analise_estado": "em_andamento",  # Sem estado, assume-se que não foi enviado para revisão
+                    "analista_responsavel": "",
+                    "analista_revisor": "",
+                }
+            except:
+                pass
+
     return None
 
 # ============================================
@@ -1084,7 +1098,7 @@ def tela_login():
         if os.path.exists("logo.png"):
             st.image("logo.png", width=200)
     
-    st.title("📐 Proanalise v1.641")
+    st.title("📐 Proanalise v1.622")
     st.caption("Sistema de análise urbanística padronizada com geração de parecer técnico")
     
     col1, col2, col3 = st.columns([1, 1.2, 1])
@@ -1116,7 +1130,7 @@ if not st.session_state["logado"]:
 # ============================================
 # SIDEBAR COM TODAS AS FUNCIONALIDADES
 # ============================================
-st.sidebar.title("📐 Proanalise v1.641")
+st.sidebar.title("📐 Proanalise v1.622")
 st.sidebar.write(f"👤 {st.session_state['usuario']} - {st.session_state.get('papel', 'Analista')}")
 st.sidebar.write(f"🔒 Nível: {st.session_state.get('nivel', 1)}")
 
@@ -1342,7 +1356,7 @@ with col_logo:
     if os.path.exists("logo.png"):
         st.image("logo.png", width=100)
 with col_titulo:
-    st.title("📐 Proanalise v1.641")
+    st.title("📐 Proanalise v1.622")
     st.caption("Sistema de análise urbanística padronizada com geração de parecer técnico")
 
 # Atualizar tema
