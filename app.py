@@ -28,7 +28,7 @@ st.set_page_config(
 )
 
 # ============================================
-# CONFIGURAÇÕES INICIAIS E INICIALIZAÇÃO
+# INICIALIZAÇÃO DAS VARIÁVEIS DE SESSÃO
 # ============================================
 if "tema_mode" not in st.session_state:
     st.session_state["tema_mode"] = "claro"
@@ -78,10 +78,6 @@ if "n_analise" not in st.session_state:
     st.session_state["n_analise"] = ""
 if "pendencias_manuais" not in st.session_state:
     st.session_state["pendencias_manuais"] = {}
-if "respostas_temp" not in st.session_state:
-    st.session_state["respostas_temp"] = {}
-if "observacoes_temp" not in st.session_state:
-    st.session_state["observacoes_temp"] = {}
 if "respostas_analise" not in st.session_state:
     st.session_state["respostas_analise"] = {}
 if "observacoes_analise" not in st.session_state:
@@ -98,7 +94,7 @@ if "analista_revisor" not in st.session_state:
 HASH_SALT = "proanalise_salt_2024"
 
 # ============================================
-# FUNÇÕES AUXILIARES PARA SERIALIZAÇÃO
+# FUNÇÕES AUXILIARES
 # ============================================
 def serialize_datetime(dt):
     if dt is None:
@@ -118,14 +114,10 @@ def deserialize_datetime(dt_str):
     except:
         return None
 
-# ============================================
-# FUNÇÃO PARA LISTAR PROTOCOLOS AGUARDANDO REVISÃO
-# ============================================
 def listar_protocolos_aguardando_revisao():
     pasta_backup = os.path.join("dados", "backups")
     if not os.path.exists(pasta_backup):
         return []
-    
     resultados = []
     for arquivo in os.listdir(pasta_backup):
         if not arquivo.startswith("backup_") or not arquivo.endswith(".json"):
@@ -159,17 +151,13 @@ def listar_protocolos_aguardando_revisao():
 def fazer_backup_automatico():
     if not st.session_state.get("analise_ativa", False):
         return False
-    
     agora = agora_brasilia()
     diff = (agora - st.session_state["ultimo_backup"]).total_seconds()
-    
     if diff >= 300:
         pasta_backup = os.path.join("dados", "backups")
         os.makedirs(pasta_backup, exist_ok=True)
-        
         timestamp = agora.strftime("%Y%m%d_%H%M%S")
         backup_file = os.path.join(pasta_backup, f"backup_{timestamp}.json")
-        
         dados_backup = {
             "protocolo": st.session_state.get("protocolo", ""),
             "tipo": st.session_state.get("tipo", ""),
@@ -196,15 +184,12 @@ def fazer_backup_automatico():
             "anotacoes_pessoais": st.session_state.get("anotacoes_pessoais", {}),
             "data_backup": timestamp
         }
-        
         with open(backup_file, "w", encoding="utf-8") as f:
             json.dump(dados_backup, f, indent=4, ensure_ascii=False)
-        
         backups = sorted([f for f in os.listdir(pasta_backup) if f.startswith("backup_")])
         if len(backups) > 10:
             for old_backup in backups[:-10]:
                 os.remove(os.path.join(pasta_backup, old_backup))
-        
         st.session_state["ultimo_backup"] = agora
         return True
     return False
@@ -212,11 +197,9 @@ def fazer_backup_automatico():
 def salvar_backup_manual():
     pasta_backup = os.path.join("dados", "backups")
     os.makedirs(pasta_backup, exist_ok=True)
-    
     agora = agora_brasilia()
     timestamp = agora.strftime("%Y%m%d_%H%M%S")
     backup_file = os.path.join(pasta_backup, f"backup_{timestamp}.json")
-    
     dados_backup = {
         "protocolo": st.session_state.get("protocolo", ""),
         "tipo": st.session_state.get("tipo", ""),
@@ -243,42 +226,35 @@ def salvar_backup_manual():
         "anotacoes_pessoais": st.session_state.get("anotacoes_pessoais", {}),
         "data_backup": timestamp
     }
-    
     with open(backup_file, "w", encoding="utf-8") as f:
         json.dump(dados_backup, f, indent=4, ensure_ascii=False)
-    
     backups = sorted([f for f in os.listdir(pasta_backup) if f.startswith("backup_")])
     if len(backups) > 10:
         for old_backup in backups[:-10]:
             os.remove(os.path.join(pasta_backup, old_backup))
-    
     return backup_file
 
 def restaurar_analise():
     pasta_backup = os.path.join("dados", "backups")
     if not os.path.exists(pasta_backup):
         return None
-    
     backups = sorted([f for f in os.listdir(pasta_backup) if f.startswith("backup_")], reverse=True)
     if not backups:
         return None
-    
     opcoes = {}
     for b in backups[:10]:
         data_str = b.replace("backup_", "").replace(".json", "")
         data_obj = datetime.strptime(data_str, "%Y%m%d_%H%M%S")
         opcoes[b] = data_obj.strftime("%d/%m/%Y %H:%M:%S")
-    
     return opcoes
 
 # ============================================
-# FUNÇÕES DE PERMISSÕES E USUÁRIOS
+# FUNÇÕES DE PERMISSÕES
 # ============================================
 def carregar_usuarios(caminho="usuarios.txt"):
     if not os.path.exists(caminho):
         st.error("Arquivo usuarios.txt não encontrado.")
         st.stop()
-    
     usuarios = {}
     with open(caminho, "r", encoding="utf-8") as f:
         for linha in f:
@@ -327,7 +303,7 @@ def pode_ver_menu(menu_item):
     return tem_permissao(niveis_necessarios.get(menu_item, 1))
 
 # ============================================
-# FUNÇÕES DE CARREGAMENTO DE PERGUNTAS DINÂMICAS
+# CARREGAMENTO DE PERGUNTAS
 # ============================================
 def carregar_perguntas_por_tipo(tipo_empreendimento, tipo_analise):
     if tipo_empreendimento == "Desmembramentos":
@@ -357,7 +333,6 @@ def carregar_perguntas_por_tipo(tipo_empreendimento, tipo_analise):
             return carregar_perguntas_txt("perguntas.txt")
         st.error(f"Arquivo de perguntas para '{tipo_analise}' não encontrado.")
         return []
-
     if tipo_analise == "Aceite urbanístico":
         if tipo_empreendimento == "Loteamento":
             arquivo = "perguntas/loteamento_aceite.txt"
@@ -368,26 +343,20 @@ def carregar_perguntas_por_tipo(tipo_empreendimento, tipo_analise):
             arquivo = "perguntas/loteamento_alvara.txt"
         else:
             arquivo = "perguntas/condominio_alvara.txt"
-    
     if os.path.exists(arquivo):
         return carregar_perguntas_txt(arquivo)
-    
     if os.path.exists("perguntas.txt"):
         return carregar_perguntas_txt("perguntas.txt")
-    
     st.error(f"Arquivo de perguntas não encontrado: {arquivo}")
     return []
 
 def carregar_perguntas_txt(caminho):
     perguntas = []
     bloco = {}
-    
     if not os.path.exists(caminho):
         return []
-    
     with open(caminho, "r", encoding="utf-8") as f:
         linhas = f.readlines()
-    
     for linha in linhas:
         linha = linha.strip()
         if not linha:
@@ -409,14 +378,12 @@ def carregar_perguntas_txt(caminho):
             chave, valor = linha.split(":", 1)
             resposta = chave.replace("REGRA_", "").strip()
             bloco.setdefault("regras", {})[resposta] = {"texto": valor.strip()}
-    
     if bloco:
         perguntas.append(bloco)
-    
     return perguntas
 
 # ============================================
-# FUNÇÕES DE MÚLTIPLOS ANALISTAS
+# FUNÇÕES DE MULTIPLOS ANALISTAS
 # ============================================
 def get_pasta_protocolo(protocolo):
     protocolo_limpo = protocolo.replace("/", "-").strip()
@@ -425,9 +392,7 @@ def get_pasta_protocolo(protocolo):
 def salvar_analise_analista(protocolo, analista, papel, respostas, observacoes, pendencias):
     pasta = get_pasta_protocolo(protocolo)
     os.makedirs(pasta, exist_ok=True)
-    
     analista_hash = hashlib.md5(f"{analista}_{papel}_{HASH_SALT}".encode()).hexdigest()[:8]
-    
     arquivo = os.path.join(pasta, f"analise_{analista_hash}_{papel}.json")
     registro = {
         "protocolo": protocolo,
@@ -439,29 +404,24 @@ def salvar_analise_analista(protocolo, analista, papel, respostas, observacoes, 
         "pendencias": pendencias,
         "hash": analista_hash
     }
-    
     with open(arquivo, "w", encoding="utf-8") as f:
         json.dump(registro, f, indent=4, ensure_ascii=False)
-    
     return analista_hash
 
 def carregar_analises_analistas(protocolo):
     pasta = get_pasta_protocolo(protocolo)
     if not os.path.exists(pasta):
         return []
-    
     analises = []
     for arquivo in os.listdir(pasta):
         if arquivo.startswith("analise_") and arquivo.endswith(".json"):
             with open(os.path.join(pasta, arquivo), "r", encoding="utf-8") as f:
                 analises.append(json.load(f))
-    
     return analises
 
 def comparar_analises(analises):
     if len(analises) < 2:
         return None
-    
     resultado = {
         "total_diferencas": 0,
         "diferencas_por_pergunta": {},
@@ -469,48 +429,36 @@ def comparar_analises(analises):
         "papeis": [a["papel"] for a in analises],
         "data_analises": [a["data"] for a in analises]
     }
-    
     todas_perguntas = set()
     for analise in analises:
         todas_perguntas.update(analise["respostas"].keys())
-    
     for pergunta in todas_perguntas:
         respostas_analistas = {}
         for analise in analises:
             resp = analise["respostas"].get(pergunta, "Não respondida")
             respostas_analistas[analise["analista"]] = resp
-        
         valores_unicos = set(respostas_analistas.values())
         if len(valores_unicos) > 1:
             resultado["diferencas_por_pergunta"][pergunta] = respostas_analistas
             resultado["total_diferencas"] += 1
-    
     return resultado
 
 def render_comparador_analises(protocolo_atual):
     if not tem_permissao(3):
         st.error("❌ Acesso negado! Apenas Analistas Responsáveis podem acessar o Comparador.")
         return
-    
     st.subheader("🔍 Comparador de Análises")
-    
     analises = carregar_analises_analistas(protocolo_atual)
-    
     if not analises:
         st.info("Nenhuma análise de outro analista encontrada para este protocolo.")
         return
-    
     st.write(f"**Total de análises encontradas:** {len(analises)}")
-    
     for a in analises:
         st.write(f"- {a['analista']} ({a['papel']}) - {a['data']}")
-    
     if st.button("Comparar Análises", use_container_width=True):
         comparacao = comparar_analises(analises)
-        
         if comparacao and comparacao["total_diferencas"] > 0:
             st.warning(f"⚠️ **{comparacao['total_diferencas']} divergências encontradas**")
-            
             for pergunta, respostas in comparacao["diferencas_por_pergunta"].items():
                 with st.expander(f"📌 Pergunta ID: {pergunta}"):
                     for analista, resposta in respostas.items():
@@ -519,13 +467,12 @@ def render_comparador_analises(protocolo_atual):
             st.success("✅ Todas as análises estão consistentes!")
 
 # ============================================
-# FUNÇÕES DE MÉTRICAS
+# FUNÇÕES DE MÉTRICAS E BUSCA
 # ============================================
 def calcular_tempo_medio_analise():
     pasta_dados = "dados"
     if not os.path.exists(pasta_dados):
         return None
-    
     tempos = []
     for protocolo_dir in os.listdir(pasta_dados):
         protocolo_path = os.path.join(pasta_dados, protocolo_dir)
@@ -535,15 +482,12 @@ def calcular_tempo_medio_analise():
                 analises.sort()
                 primeira = analises[0]
                 ultima = analises[-1]
-                
                 with open(os.path.join(protocolo_path, primeira), "r", encoding="utf-8") as f:
                     data_primeira = datetime.strptime(json.load(f)["data"], "%d/%m/%Y")
                 with open(os.path.join(protocolo_path, ultima), "r", encoding="utf-8") as f:
                     data_ultima = datetime.strptime(json.load(f)["data"], "%d/%m/%Y")
-                
                 tempo = (data_ultima - data_primeira).days
                 tempos.append(tempo)
-    
     if tempos:
         return sum(tempos) / len(tempos)
     return None
@@ -551,31 +495,26 @@ def calcular_tempo_medio_analise():
 def gerar_grafico_inconformidades(respostas, grupos_inconformes):
     if not grupos_inconformes:
         return None
-    
     dados = []
     for grupo, itens in grupos_inconformes.items():
         dados.append({"Grupo": grupo, "Inconformidades": len(itens)})
-    
     df = pd.DataFrame(dados)
     fig = px.bar(df, x="Grupo", y="Inconformidades", 
                  title="Inconformidades por Grupo",
                  color="Inconformidades",
                  color_continuous_scale="Reds")
-    
     fig.update_layout(
         xaxis_title="Grupo",
         yaxis_title="Número de Inconformidades",
         showlegend=False,
         height=400
     )
-    
     return fig
 
 def gerar_grafico_tempo_analises():
     pasta_dados = "dados"
     if not os.path.exists(pasta_dados):
         return None
-    
     dados_tempo = []
     for protocolo_dir in os.listdir(pasta_dados):
         protocolo_path = os.path.join(pasta_dados, protocolo_dir)
@@ -586,17 +525,14 @@ def gerar_grafico_tempo_analises():
                     primeira = json.load(f)
                 with open(os.path.join(protocolo_path, analises[-1]), "r", encoding="utf-8") as f:
                     ultima = json.load(f)
-                
                 data_inicio = datetime.strptime(primeira["data"], "%d/%m/%Y")
                 data_fim = datetime.strptime(ultima["data"], "%d/%m/%Y")
                 dias = (data_fim - data_inicio).days
-                
                 dados_tempo.append({
                     "Protocolo": protocolo_dir.replace("-", "/"),
                     "Dias de Análise": dias,
                     "Conclusão": ultima.get("conclusao", "Em análise")
                 })
-    
     if dados_tempo:
         df = pd.DataFrame(dados_tempo)
         fig = px.bar(df, x="Protocolo", y="Dias de Análise", 
@@ -607,14 +543,10 @@ def gerar_grafico_tempo_analises():
         return fig
     return None
 
-# ============================================
-# FUNÇÕES DE BUSCA E FILTROS
-# ============================================
 def buscar_protocolos(termo_busca, filtro_status=None, filtro_analista=None, data_inicio=None, data_fim=None):
     pasta_dados = "dados"
     if not os.path.exists(pasta_dados):
         return []
-    
     resultados = []
     for protocolo_dir in os.listdir(pasta_dados):
         protocolo_path = os.path.join(pasta_dados, protocolo_dir)
@@ -623,7 +555,6 @@ def buscar_protocolos(termo_busca, filtro_status=None, filtro_analista=None, dat
                 status = "Em análise"
                 analista = "Não informado"
                 data_analise = datetime.fromtimestamp(os.path.getmtime(protocolo_path))
-                
                 analises = [f for f in os.listdir(protocolo_path) if f.startswith("AN") and f.endswith(".json")]
                 if analises:
                     ultima = sorted(analises)[-1]
@@ -631,7 +562,6 @@ def buscar_protocolos(termo_busca, filtro_status=None, filtro_analista=None, dat
                         dados = json.load(f)
                         status = dados.get("conclusao", "Em análise")
                         analista = dados.get("analista", "Não informado")
-                
                 if filtro_status and filtro_status != "Todos":
                     if status != filtro_status:
                         continue
@@ -644,7 +574,6 @@ def buscar_protocolos(termo_busca, filtro_status=None, filtro_analista=None, dat
                 if data_fim:
                     if data_analise.date() > data_fim:
                         continue
-                
                 resultados.append({
                     "protocolo": protocolo_dir.replace("-", "/"),
                     "status": status,
@@ -652,12 +581,8 @@ def buscar_protocolos(termo_busca, filtro_status=None, filtro_analista=None, dat
                     "data_ultima": data_analise.strftime("%d/%m/%Y"),
                     "qtd_analises": len(analises)
                 })
-    
     return resultados
 
-# ============================================
-# FUNÇÕES DE PRODUTIVIDADE
-# ============================================
 def proxima_pergunta_nao_respondida(respostas, perguntas):
     for idx, p in enumerate(perguntas):
         resposta = respostas.get(p["id"])
@@ -665,19 +590,15 @@ def proxima_pergunta_nao_respondida(respostas, perguntas):
             return p["id"], idx
     return None, None
 
-# ============================================
-# FUNÇÕES AUXILIARES
-# ============================================
 def resposta_preenchida(valor):
     return valor not in ("", None, "Selecione...")
 
 # ============================================
-# CARREGAR TEMA (CLARO/ESCURO)
+# TEMA E CSS
 # ============================================
 def carregar_tema():
     if "tema_mode" not in st.session_state:
         st.session_state["tema_mode"] = "claro"
-    
     tema_claro = {
         "cores": {
             "primaria": "#0a2a3a",
@@ -711,7 +632,6 @@ def carregar_tema():
             "nao_se_enquadra": {"fundo": "#eff6ff", "borda": "#175cd3", "texto": "#0e4a8a", "icone": "ℹ️"}
         }
     }
-    
     tema_escuro = {
         "cores": {
             "primaria": "#e8f0fe",
@@ -745,33 +665,20 @@ def carregar_tema():
             "nao_se_enquadra": {"fundo": "#1a2a3a", "borda": "#c7d7fe", "texto": "#c7d7fe", "icone": "ℹ️"}
         }
     }
-    
     if st.session_state["tema_mode"] == "escuro":
         return tema_escuro
     return tema_claro
 
-# ============================================
-# RENDERIZAÇÃO DO TEMA CSS
-# ============================================
 tema = carregar_tema()
-
 css_tema = f"""
 <style>
     .stApp {{ background: {tema["cores"]["fundo_app"]}; }}
     .main > div {{ background-color: {tema["cores"]["fundo_branco"]}; border-radius: 12px; padding: 1rem; }}
-    
     [data-testid="stSidebar"] {{ background: {tema["cores"]["sidebar_fundo"]}; }}
     [data-testid="stSidebar"] * {{ color: {tema["botoes"]["texto"]} !important; }}
-    
     h1 {{ color: {tema["cores"]["texto_titulo"]} !important; font-weight: 700 !important; font-size: 24px !important; }}
     h2, h3, h4 {{ color: {tema["cores"]["primaria"]} !important; font-weight: 600 !important; }}
-    
-    .stCaption {{
-        color: {tema["cores"]["texto_caption"]} !important;
-        font-size: 14px !important;
-    }}
-    
-    /* CORREÇÃO DO CURSOR PISCANTE */
+    .stCaption {{ color: {tema["cores"]["texto_caption"]} !important; font-size: 14px !important; }}
     .stTextInput input, .stTextArea textarea, .stNumberInput input {{
         background-color: {tema["cores"]["fundo_branco"]} !important;
         color: {tema["cores"]["texto_principal"]} !important;
@@ -779,18 +686,15 @@ css_tema = f"""
         border-radius: 6px !important;
         caret-color: {tema["cores"]["primaria"]} !important;
     }}
-    
     .stTextInput input:focus, .stTextArea textarea:focus, .stNumberInput input:focus {{
         border-color: {tema["cores"]["primaria"]} !important;
         box-shadow: 0 0 0 2px rgba(26, 82, 118, 0.2) !important;
         outline: none !important;
     }}
-    
     .stTextInput label, .stSelectbox label, .stTextArea label, .stNumberInput label {{
         color: {tema["cores"]["primaria_clara"]} !important;
         font-weight: 600 !important;
     }}
-    
     .stSelectbox select {{
         background-color: {tema["cores"]["fundo_branco"]} !important;
         color: {tema["cores"]["texto_principal"]} !important;
@@ -798,14 +702,12 @@ css_tema = f"""
         border-radius: 6px !important;
         font-size: 14px !important;
     }}
-    
     div[data-baseweb="menu"] {{
         background-color: #1a1a2e !important;
         border: 1px solid #2c6b96 !important;
         border-radius: 8px !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
     }}
-    
     div[data-baseweb="menu"] div {{
         background-color: #1a1a2e !important;
         color: white !important;
@@ -813,17 +715,14 @@ css_tema = f"""
         font-size: 14px !important;
         cursor: pointer !important;
     }}
-    
     div[data-baseweb="menu"] div:hover {{
         background-color: #2c6b96 !important;
         color: white !important;
     }}
-    
     div[data-baseweb="menu"] div[aria-selected="true"] {{
         background-color: #0d6e2e !important;
         color: white !important;
     }}
-    
     .stButton > button {{
         border-radius: 8px !important;
         font-weight: 600 !important;
@@ -831,36 +730,30 @@ css_tema = f"""
         border: none !important;
         transition: all 0.3s ease !important;
     }}
-    
     .stButton > button[kind="primary"] {{
         background-color: {tema["botoes"]["primario_fundo"]} !important;
         color: white !important;
     }}
-    
     .stButton > button[kind="primary"]:hover {{
         background-color: {tema["botoes"]["primario_fundo_hover"]} !important;
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         color: white !important;
     }}
-    
     .stButton > button:not([kind="primary"]) {{
         background-color: {tema["botoes"]["secundario_fundo"]} !important;
         color: white !important;
     }}
-    
     .stButton > button:not([kind="primary"]):hover {{
         background-color: {tema["botoes"]["secundario_fundo_hover"]} !important;
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         color: white !important;
     }}
-    
     .stButton > button:disabled {{
         background-color: #cccccc !important;
         color: #666666 !important;
     }}
-    
     .status-badge-conforme {{
         background-color: {tema["status"]["conforme"]["fundo"]};
         border-left: 4px solid {tema["status"]["conforme"]["borda"]};
@@ -870,7 +763,6 @@ css_tema = f"""
         color: {tema["status"]["conforme"]["texto"]};
         font-weight: 600;
     }}
-    
     .status-badge-inconforme {{
         background-color: {tema["status"]["inconforme"]["fundo"]};
         border-left: 4px solid {tema["status"]["inconforme"]["borda"]};
@@ -880,7 +772,6 @@ css_tema = f"""
         color: {tema["status"]["inconforme"]["texto"]};
         font-weight: 600;
     }}
-    
     .status-badge-pendente {{
         background-color: {tema["status"]["pendente"]["fundo"]};
         border-left: 4px solid {tema["status"]["pendente"]["borda"]};
@@ -890,7 +781,6 @@ css_tema = f"""
         color: {tema["status"]["pendente"]["texto"]};
         font-weight: 600;
     }}
-    
     .status-badge-na {{
         background-color: {tema["status"]["nao_se_enquadra"]["fundo"]};
         border-left: 4px solid {tema["status"]["nao_se_enquadra"]["borda"]};
@@ -900,7 +790,6 @@ css_tema = f"""
         color: {tema["status"]["nao_se_enquadra"]["texto"]};
         font-weight: 600;
     }}
-    
     .progress-wrap {{
         width: 100%;
         background: #e9ecef;
@@ -909,13 +798,11 @@ css_tema = f"""
         overflow: hidden;
         margin: 8px 0;
     }}
-    
     .progress-bar {{
         height: 14px;
         border-radius: 999px;
         transition: width 0.3s ease;
     }}
-    
     .card {{
         padding: 12px 16px;
         border: 1px solid #c5d5e6;
@@ -924,36 +811,30 @@ css_tema = f"""
         margin-bottom: 0.6rem;
         color: {tema["cores"]["texto_principal"]};
     }}
-    
     [data-testid="stMetric"] {{
         background-color: {tema["cores"]["fundo_claro"]};
         border-radius: 8px;
         padding: 10px;
         border: 1px solid #c5d5e6;
     }}
-    
     [data-testid="stMetric"] label {{
         color: {tema["cores"]["primaria"]} !important;
         font-weight: 600 !important;
     }}
-    
     [data-testid="stMetric"] .stMetricValue {{
         color: {tema["cores"]["texto_principal"]} !important;
         font-weight: 700 !important;
     }}
-    
     .streamlit-expanderHeader {{
         background-color: {tema["cores"]["fundo_claro"]} !important;
         color: {tema["cores"]["primaria"]} !important;
         font-weight: 600 !important;
         border-radius: 8px !important;
     }}
-    
     .streamlit-expanderContent {{
         background-color: {tema["cores"]["fundo_branco"]} !important;
         border-radius: 0 0 8px 8px !important;
     }}
-    
     .card-revisao {{
         background-color: #fff3cd;
         border-left: 4px solid #ffc107;
@@ -961,8 +842,6 @@ css_tema = f"""
         border-radius: 6px;
         margin: 5px 0;
     }}
-    
-    /* BOTÃO FLUTUANTE */
     .floating-btn {{
         position: fixed;
         bottom: 20px;
@@ -975,37 +854,28 @@ css_tema = f"""
         box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
         animation: pulse 2s infinite;
     }}
-    
     @keyframes pulse {{
         0% {{ transform: scale(1); }}
         50% {{ transform: scale(1.05); }}
         100% {{ transform: scale(1); }}
     }}
-    
     .floating-btn:hover {{
         background-color: {tema["botoes"]["primario_fundo_hover"]} !important;
         transform: translateY(-2px);
     }}
-    
     p, li, .stMarkdown, .stText {{
         color: {tema["cores"]["texto_secundario"]};
     }}
-    
     hr {{
         border-color: {tema["cores"]["primaria_clara"]};
     }}
-    
     .stInfo, .stSuccess, .stWarning, .stError {{
         border-radius: 8px !important;
     }}
 </style>
 """
-
 st.markdown(css_tema, unsafe_allow_html=True)
 
-# ============================================
-# JAVASCRIPT PARA O DROPDOWN E BOTÃO FLUTUANTE
-# ============================================
 st.markdown("""
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -1044,25 +914,21 @@ document.addEventListener('DOMContentLoaded', function() {
 """, unsafe_allow_html=True)
 
 # ============================================
-# TELA DE LOGIN
+# LOGIN
 # ============================================
 def tela_login():
     col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
     with col_logo2:
         if os.path.exists("logo.png"):
             st.image("logo.png", width=200)
-    
     st.title("📐 Proanalise v1.622")
     st.caption("Sistema de análise urbanística padronizada com geração de parecer técnico")
-    
     col1, col2, col3 = st.columns([1, 1.2, 1])
     with col2:
         st.markdown("### Acesso ao sistema")
         usuarios = carregar_usuarios()
-        
         user = st.text_input("Usuário", key="login_user")
         senha = st.text_input("Senha", type="password", key="login_senha")
-        
         if st.button("Entrar", use_container_width=True, key="btn_login", type="primary"):
             if user in usuarios and usuarios[user]["senha"] == senha:
                 st.session_state["logado"] = True
@@ -1076,7 +942,6 @@ def tela_login():
 
 if "logado" not in st.session_state:
     st.session_state["logado"] = False
-
 if not st.session_state["logado"]:
     tela_login()
     st.stop()
@@ -1088,7 +953,6 @@ st.sidebar.title("📐 Proanalise v1.622")
 st.sidebar.write(f"👤 {st.session_state['usuario']} - {st.session_state.get('papel', 'Analista')}")
 st.sidebar.write(f"🔒 Nível: {st.session_state.get('nivel', 1)}")
 
-# Indicador de análise ativa e estado
 if st.session_state.get("analise_ativa", False):
     estado = st.session_state.get("analise_estado", "em_andamento")
     if estado == "em_andamento":
@@ -1109,8 +973,6 @@ else:
         st.sidebar.warning("⏸️ Nenhuma análise ativa")
 
 st.sidebar.markdown("---")
-
-# Resumo básico do protocolo
 with st.sidebar.expander("📋 Resumo do Protocolo", expanded=True):
     col1, col2 = st.sidebar.columns(2)
     with col1:
@@ -1131,8 +993,6 @@ with st.sidebar.expander("📋 Resumo do Protocolo", expanded=True):
     st.write(f"**{st.session_state.get('analise_estado', 'em_andamento').replace('_', ' ').title()}**")
 
 st.sidebar.markdown("---")
-
-# Busca rápida
 st.sidebar.subheader("🔍 Busca Rápida")
 termo_busca = st.sidebar.text_input("N° Protocolo", placeholder="Digite o protocolo...", key="busca_rapida")
 if termo_busca:
@@ -1142,8 +1002,6 @@ if termo_busca:
             st.sidebar.write(f"📋 {r['protocolo']} - {r['status']}")
 
 st.sidebar.markdown("---")
-
-# Protocolos aguardando revisão
 st.sidebar.subheader("📋 Protocolos para revisão")
 protocolos_revisao = listar_protocolos_aguardando_revisao()
 if protocolos_revisao:
@@ -1156,9 +1014,9 @@ if protocolos_revisao:
                 for key, value in dados.items():
                     if key in st.session_state:
                         st.session_state[key] = value
-                st.session_state["respostas_temp"] = dados.get("respostas_analise", {})
-                st.session_state["observacoes_temp"] = dados.get("observacoes_analise", {})
-                st.session_state["pendencias_manuais"] = dados.get("pendencias_analise", {})
+                st.session_state["respostas_analise"] = dados.get("respostas_analise", {})
+                st.session_state["observacoes_analise"] = dados.get("observacoes_analise", {})
+                st.session_state["pendencias_analise"] = dados.get("pendencias_analise", {})
                 st.session_state["tempo_inicio"] = deserialize_datetime(dados.get("tempo_inicio"))
                 st.session_state["tempo_fim"] = deserialize_datetime(dados.get("tempo_fim"))
                 st.session_state["protocolo"] = dados.get("protocolo", "")
@@ -1176,34 +1034,25 @@ else:
     st.sidebar.info("Nenhum protocolo aguardando revisão no momento.")
 
 st.sidebar.markdown("---")
-
-# Seletor de etapas
 menus_base = ["1. Protocolo", "2. Analista", "3. Análise", "4. Revisão", "5. Gerar parecer"]
 menus_nivel2 = ["6. Dashboard"]
 menus_nivel3 = ["7. Comparador"]
-
 menus_disponiveis = []
 for menu in menus_base:
     if pode_ver_menu(menu):
         menus_disponiveis.append(menu)
-
 if tem_permissao(2):
     menus_disponiveis.extend(menus_nivel2)
-
 if tem_permissao(3):
     menus_disponiveis.extend(menus_nivel3)
-
 if st.session_state["etapa"] not in menus_disponiveis:
     st.session_state["etapa"] = menus_disponiveis[0]
-
 etapa_atual = st.sidebar.radio("📋 Etapas", menus_disponiveis, index=menus_disponiveis.index(st.session_state["etapa"]))
 if etapa_atual != st.session_state["etapa"]:
     st.session_state["etapa"] = etapa_atual
     st.rerun()
 
 st.sidebar.markdown("---")
-
-# Botões de controle
 col_salvar, col_restaurar = st.sidebar.columns(2)
 with col_salvar:
     if st.button("💾 Salvar manual", use_container_width=True):
@@ -1229,47 +1078,24 @@ with col_restaurar:
             caminho_backup = os.path.join("dados", "backups", backup_selecionado)
             with open(caminho_backup, "r", encoding="utf-8") as f:
                 dados_restaurados = json.load(f)
-                
                 for key, value in dados_restaurados.items():
                     if key in st.session_state:
                         st.session_state[key] = value
-                
-                st.session_state["respostas_temp"] = dados_restaurados.get("respostas_analise", {})
-                st.session_state["observacoes_temp"] = dados_restaurados.get("observacoes_analise", {})
-                st.session_state["pendencias_manuais"] = dados_restaurados.get("pendencias_analise", {})
                 st.session_state["respostas_analise"] = dados_restaurados.get("respostas_analise", {})
                 st.session_state["observacoes_analise"] = dados_restaurados.get("observacoes_analise", {})
                 st.session_state["pendencias_analise"] = dados_restaurados.get("pendencias_analise", {})
-                
                 st.session_state["tempo_inicio"] = deserialize_datetime(dados_restaurados.get("tempo_inicio"))
                 st.session_state["tempo_fim"] = deserialize_datetime(dados_restaurados.get("tempo_fim"))
-                
-                st.session_state["tipo"] = dados_restaurados.get("tipo", "Loteamento")
-                st.session_state["tipo_analise"] = dados_restaurados.get("tipo_analise", "Aceite urbanístico")
                 st.session_state["marcadas_revisao"] = set(dados_restaurados.get("marcadas_revisao", []))
                 st.session_state["analise_estado"] = dados_restaurados.get("analise_estado", "em_andamento")
                 st.session_state["analista_responsavel"] = dados_restaurados.get("analista_responsavel", "")
                 st.session_state["analista_revisor"] = dados_restaurados.get("analista_revisor", "")
-                
-                if dados_restaurados.get("analise_concluida", False):
-                    st.session_state["analise_ativa"] = False
-                    st.session_state["analise_concluida"] = True
-                else:
-                    if dados_restaurados.get("respostas_analise"):
-                        st.session_state["analise_ativa"] = True
-                        st.session_state["analise_concluida"] = False
-                    else:
-                        st.session_state["analise_ativa"] = False
-                        st.session_state["analise_concluida"] = False
-                
                 st.success("✅ Análise restaurada com sucesso!")
             st.rerun()
     else:
         st.sidebar.info("Nenhum backup disponível. Salve uma análise primeiro.")
 
 st.sidebar.markdown("---")
-
-# Anotações pessoais
 with st.sidebar.expander("📓 Anotações Pessoais", expanded=False):
     anotacao_atual = st.session_state["anotacoes_pessoais"].get(st.session_state.get("protocolo", ""), "")
     nova_anotacao = st.text_area("Não vão para o parecer", value=anotacao_atual, height=150)
@@ -1277,8 +1103,6 @@ with st.sidebar.expander("📓 Anotações Pessoais", expanded=False):
         st.session_state["anotacoes_pessoais"][st.session_state.get("protocolo", "")] = nova_anotacao
 
 st.sidebar.markdown("---")
-
-# Tema
 st.sidebar.subheader("🎨 Aparência")
 col_tema1, col_tema2 = st.sidebar.columns(2)
 with col_tema1:
@@ -1291,7 +1115,6 @@ with col_tema2:
         st.rerun()
 
 st.sidebar.markdown("---")
-
 if st.sidebar.button("🚪 Sair", use_container_width=True, key="btn_sair"):
     st.session_state["logado"] = False
     st.session_state.pop("dados_antigos", None)
@@ -1327,9 +1150,8 @@ def render_progresso(preenchidas, total, pct, destino):
     destino.markdown(html, unsafe_allow_html=True)
 
 # ============================================
-# CARREGAR PERGUNTAS E TÍTULO
+# CARREGAR PERGUNTAS
 # ============================================
-# Carregar perguntas dinâmicas
 if st.session_state.get("tipo") and st.session_state.get("tipo_analise"):
     perguntas = carregar_perguntas_por_tipo(st.session_state["tipo"], st.session_state["tipo_analise"])
 else:
@@ -1346,21 +1168,19 @@ with col_titulo:
 tema = carregar_tema()
 
 # ============================================
-# FUNÇÕES PRINCIPAIS (dependentes de perguntas)
+# FUNÇÕES PRINCIPAIS DEPENDENTES DE PERGUNTAS
 # ============================================
 def definir_conclusao(respostas, pendencias_manuais=None):
     for p in perguntas:
         resposta = respostas.get(p["id"])
         if not resposta_preenchida(resposta):
             return "PENDENTE"
-    
     for p in perguntas:
         resposta = respostas.get(p["id"])
         if resposta_preenchida(resposta):
             conformes = p.get("conformes", ["Sim", "Não se enquadra"])
             if resposta not in conformes and resposta in p.get("regras", {}):
                 return "DESFAVORÁVEL"
-    
     if pendencias_manuais:
         for grupo, pendencias in pendencias_manuais.items():
             if isinstance(pendencias, list):
@@ -1369,7 +1189,6 @@ def definir_conclusao(respostas, pendencias_manuais=None):
                         return "DESFAVORÁVEL"
             elif pendencias and pendencias.strip():
                 return "DESFAVORÁVEL"
-    
     return "FAVORÁVEL"
 
 def montar_inconformidades_por_grupo(respostas, observacoes, pendencias_manuais=None):
@@ -1387,7 +1206,6 @@ def montar_inconformidades_por_grupo(respostas, observacoes, pendencias_manuais=
             if obs:
                 texto += f"\nObservação: {obs}"
             grupos.setdefault(grupo, []).append(texto)
-    
     if pendencias_manuais:
         for grupo, pendencias in pendencias_manuais.items():
             if isinstance(pendencias, list):
@@ -1445,7 +1263,6 @@ def gerar_docx(dados, respostas, observacoes, conclusao, analista, matricula, se
 
 def visualizar_parecer_html(dados, respostas, observacoes, conclusao, analista, n_analise, pendencias_manuais=None):
     grupos_inconformes = montar_inconformidades_por_grupo(respostas, observacoes, pendencias_manuais)
-    
     html = f"""
     <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ccc; border-radius: 10px; background-color: white;">
         <h2 style="color: #1a5276;">PARECER DE ANÁLISE URBANÍSTICA</h2>
@@ -1462,7 +1279,6 @@ def visualizar_parecer_html(dados, respostas, observacoes, conclusao, analista, 
         <hr>
         <h3 style="color: #1a5276;">INCONFORMIDADES IDENTIFICADAS:</h3>
     """
-    
     if grupos_inconformes:
         contador = 1
         for grupo, itens in grupos_inconformes.items():
@@ -1472,7 +1288,6 @@ def visualizar_parecer_html(dados, respostas, observacoes, conclusao, analista, 
                 contador += 1
     else:
         html += "<p>Não foram identificadas inconformidades.</p>"
-    
     html += f"""
         <hr>
         <h3 style="color: #1a5276;">CONCLUSÃO</h3>
@@ -1506,9 +1321,7 @@ def resumo_status_pergunta(p, resposta):
 # ============================================
 if st.session_state["etapa"] == "1. Protocolo":
     st.header("📋 Dados do protocolo")
-    
     protocolo = st.text_input("N° Protocolo", value=st.session_state["protocolo"], key="protocolo_input")
-    
     if protocolo != st.session_state.get("protocolo_anterior", ""):
         st.session_state["protocolo_anterior"] = protocolo
         if protocolo:
@@ -1524,9 +1337,9 @@ if st.session_state["etapa"] == "1. Protocolo":
                             for key, value in dados.items():
                                 if key in st.session_state:
                                     st.session_state[key] = value
-                            st.session_state["respostas_temp"] = dados.get("respostas_analise", {})
-                            st.session_state["observacoes_temp"] = dados.get("observacoes_analise", {})
-                            st.session_state["pendencias_manuais"] = dados.get("pendencias_analise", {})
+                            st.session_state["respostas_analise"] = dados.get("respostas_analise", {})
+                            st.session_state["observacoes_analise"] = dados.get("observacoes_analise", {})
+                            st.session_state["pendencias_analise"] = dados.get("pendencias_analise", {})
                             st.session_state["tempo_inicio"] = deserialize_datetime(dados.get("tempo_inicio"))
                             st.session_state["tempo_fim"] = deserialize_datetime(dados.get("tempo_fim"))
                             st.session_state["marcadas_revisao"] = set(dados.get("marcadas_revisao", []))
@@ -1540,7 +1353,6 @@ if st.session_state["etapa"] == "1. Protocolo":
                             break
                     except:
                         continue
-    
     if protocolo != st.session_state["protocolo"]:
         st.session_state["protocolo"] = protocolo
         if st.session_state.get("analise_ativa"):
@@ -1565,28 +1377,23 @@ if st.session_state["etapa"] == "1. Protocolo":
             ]
         else:
             opcoes_analise = ["Aceite urbanístico", "Alvará"]
-        
         if st.session_state["tipo_analise"] not in opcoes_analise:
             st.session_state["tipo_analise"] = opcoes_analise[0]
-        
         indice_analise = opcoes_analise.index(st.session_state["tipo_analise"])
         tipo_analise = st.selectbox("Tipo de Análise", opcoes_analise, index=indice_analise, key="tipo_analise_select")
         if tipo_analise != st.session_state["tipo_analise"]:
             st.session_state["tipo_analise"] = tipo_analise
             perguntas = carregar_perguntas_por_tipo(tipo, tipo_analise)
-    
+
     interessado = st.text_input("Requerente", value=st.session_state["interessado"], key="interessado_input")
     st.session_state["interessado"] = interessado
-    
     n_lotes = st.number_input("Número de Lotes", min_value=1, value=st.session_state["n_lotes"], key="n_lotes_input")
     st.session_state["n_lotes"] = n_lotes
-    
     matriculas = st.text_area("Matrícula(s) do Empreendimento", value=st.session_state["matriculas"], 
                                key="matriculas_input", placeholder="Digite a(s) matrícula(s) separadas por vírgula")
     st.session_state["matriculas"] = matriculas
-    
     st.markdown("---")
-    
+
     estado = st.session_state.get("analise_estado", "em_andamento")
     if estado == "em_andamento":
         if st.session_state.get("analise_ativa"):
@@ -1629,14 +1436,12 @@ if st.session_state["etapa"] == "1. Protocolo":
 elif st.session_state["etapa"] == "2. Analista":
     st.header("👤 Dados do analista")
     st.info(f"📌 Protocolo: **{st.session_state['protocolo']}**")
-    
     analista = st.text_input("Nome do Analista", value=st.session_state["analista"], key="analista_input")
     st.session_state["analista"] = analista
     matricula_analista = st.text_input("Matrícula do Analista", value=st.session_state["matricula_analista"], key="matricula_analista_input")
     st.session_state["matricula_analista"] = matricula_analista
     setor = st.text_input("Setor", value=st.session_state["setor"], key="setor_input")
     st.session_state["setor"] = setor
-    
     n_analise_sugerida = "1"
     if st.session_state["protocolo"]:
         pasta = get_pasta_protocolo(st.session_state["protocolo"])
@@ -1645,13 +1450,10 @@ elif st.session_state["etapa"] == "2. Analista":
             if analises:
                 ultimo_num = max([int(a.replace("AN", "").replace(".json", "")) for a in analises])
                 n_analise_sugerida = str(ultimo_num + 1)
-    
     if not st.session_state["n_analise"]:
         st.session_state["n_analise"] = n_analise_sugerida
-    
     n_analise = st.text_input("Nº da Análise", value=st.session_state["n_analise"], key="n_analise_input")
     st.session_state["n_analise"] = n_analise
-    
     col1, col2 = st.columns(2)
     with col1:
         if st.button("← Voltar", use_container_width=True):
@@ -1672,7 +1474,6 @@ elif st.session_state["etapa"] == "3. Análise":
     estado = st.session_state.get("analise_estado", "em_andamento")
     usuario_atual = st.session_state.get("usuario", "")
     responsavel = st.session_state.get("analista_responsavel", "")
-    
     modo_leitura = False
     if estado == "aguardando_revisao" and usuario_atual != responsavel:
         modo_leitura = True
@@ -1680,7 +1481,7 @@ elif st.session_state["etapa"] == "3. Análise":
     elif estado == "revisado":
         st.warning("⚠️ Esta análise já foi revisada e aprovada. Não é mais possível editar.")
         modo_leitura = True
-    
+
     if not st.session_state.get("analise_ativa", False) and not modo_leitura:
         if st.session_state.get("respostas_analise") and not st.session_state.get("analise_concluida", False):
             st.session_state["analise_ativa"] = True
@@ -1690,34 +1491,23 @@ elif st.session_state["etapa"] == "3. Análise":
                 st.session_state["etapa"] = "1. Protocolo"
                 st.rerun()
             st.stop()
-    
+
     st.header("🔍 Análise técnica" + (" (somente leitura)" if modo_leitura else ""))
     st.info(f"📌 Protocolo: **{st.session_state['protocolo']}** | Analista: **{st.session_state['analista']}**")
-    
     fazer_backup_automatico()
-    
-    # Sincroniza respostas
-    if "respostas_analise" not in st.session_state:
-        st.session_state["respostas_analise"] = {}
-    if "respostas_temp" not in st.session_state:
-        st.session_state["respostas_temp"] = {}
-    
-    # Se houver respostas_temp mas respostas_analise estiver vazio, carrega de temp
-    if st.session_state["respostas_temp"] and not st.session_state["respostas_analise"]:
-        st.session_state["respostas_analise"] = dict(st.session_state["respostas_temp"])
-    
-    respostas = st.session_state["respostas_analise"]
+
+    respostas = st.session_state.get("respostas_analise", {})
     observacoes = st.session_state.get("observacoes_analise", {})
     pendencias_manuais = st.session_state.get("pendencias_analise", {})
-    
+
     if not modo_leitura:
         proximo_id, _ = proxima_pergunta_nao_respondida(respostas, perguntas)
         if proximo_id:
             st.session_state["botao_flutuante"] = True
         else:
             st.session_state["botao_flutuante"] = False
-    
-    # Botão para preencher aleatoriamente (nível 3)
+
+    # Botão preencher aleatoriamente (nível 3)
     if tem_permissao(3) and not modo_leitura:
         col_btn1, col_btn2 = st.columns([1, 4])
         with col_btn1:
@@ -1731,35 +1521,31 @@ elif st.session_state["etapa"] == "3. Análise":
                             if opcoes_validas:
                                 respostas[pid] = random.choice(opcoes_validas)
                 st.session_state["respostas_analise"] = respostas
-                st.session_state["respostas_temp"] = dict(respostas)
+                st.session_state["observacoes_analise"] = observacoes
+                st.session_state["pendencias_analise"] = pendencias_manuais
                 st.rerun()
-    
+
     grupos_ordenados = []
     for p in perguntas:
         grupo = p["grupo"]
         if grupo not in grupos_ordenados:
             grupos_ordenados.append(grupo)
-    
+
     inconformes_sidebar = []
-    
     for grupo in grupos_ordenados:
         perguntas_grupo = [p for p in perguntas if p["grupo"] == grupo]
         with st.expander(f"📁 {grupo}", expanded=False):
             for idx, p in enumerate(perguntas_grupo):
                 pid = p["id"]
-                
                 valor_salvo = respostas.get(pid, "Selecione...")
                 obs_salva = observacoes.get(pid, "")
-                
                 if st.session_state["dados_antigos"] and pid not in respostas:
                     valor_salvo = st.session_state["dados_antigos"]["respostas"].get(pid, "Selecione...")
                     obs_salva = st.session_state["dados_antigos"]["observacoes"].get(pid, "")
-                
                 opcoes = ["Selecione..."] + p["opcoes"]
                 idx_padrao = opcoes.index(valor_salvo) if valor_salvo in opcoes else 0
-                
+
                 col_pergunta, col_status, col_marcar = st.columns([3, 1, 0.5])
-                
                 with col_pergunta:
                     if modo_leitura:
                         st.markdown(f"**{p['pergunta']}**")
@@ -1767,13 +1553,13 @@ elif st.session_state["etapa"] == "3. Análise":
                     else:
                         resposta = st.selectbox(p["pergunta"], opcoes, index=idx_padrao, key=f"resp_{pid}", help=f"ID: {pid}")
                         respostas[pid] = resposta
-                
+
                 with col_status:
                     status = resumo_status_pergunta(p, valor_salvo if modo_leitura else respostas.get(pid, "Selecione..."))
                     render_status_badge(status)
                     if status == "inconforme":
                         inconformes_sidebar.append(p["pergunta"])
-                
+
                 if not modo_leitura:
                     with col_marcar:
                         marcada = pid in st.session_state["marcadas_revisao"]
@@ -1783,24 +1569,19 @@ elif st.session_state["etapa"] == "3. Análise":
                             else:
                                 st.session_state["marcadas_revisao"].add(pid)
                             st.rerun()
-                    
                     if pid in st.session_state["marcadas_revisao"]:
                         st.markdown("<div class='card-revisao'>🔖 Marcada para revisão posterior</div>", unsafe_allow_html=True)
-                    
                     obs = st.text_area("📝 Observação (opcional)", value=obs_salva, key=f"obs_{pid}", height=68)
                     observacoes[pid] = obs
                 else:
                     if obs_salva:
                         st.markdown(f"**Observação:** {obs_salva}")
-                
                 st.markdown("---")
-            
+
             if not modo_leitura:
                 st.markdown("### 📝 Inconformidades Diversas")
-                
                 if grupo not in pendencias_manuais:
                     pendencias_manuais[grupo] = []
-                
                 if pendencias_manuais[grupo]:
                     for i, pendencia in enumerate(pendencias_manuais[grupo]):
                         if pendencia:
@@ -1811,32 +1592,25 @@ elif st.session_state["etapa"] == "3. Análise":
                                 if st.button("🗑️", key=f"del_{grupo}_{i}"):
                                     pendencias_manuais[grupo].pop(i)
                                     st.rerun()
-                
                 if st.button(f"+ Adicionar", key=f"add_{grupo}"):
                     pendencias_manuais[grupo].append("")
                     st.rerun()
-                
                 if pendencias_manuais[grupo] and not pendencias_manuais[grupo][-1]:
                     nova = st.text_area("Nova inconformidade", key=f"new_{grupo}", height=68)
                     if nova:
                         pendencias_manuais[grupo][-1] = nova
                         st.rerun()
-    
+
     if not modo_leitura:
         st.session_state["respostas_analise"] = respostas
         st.session_state["observacoes_analise"] = observacoes
         st.session_state["pendencias_analise"] = pendencias_manuais
-        # Mantém cópia em temp
-        st.session_state["respostas_temp"] = dict(respostas)
-        st.session_state["observacoes_temp"] = dict(observacoes)
-        st.session_state["pendencias_manuais"] = dict(pendencias_manuais)
-    
+
     preenchidas, total, pct = progresso_percentual(respostas)
     render_progresso(preenchidas, total, pct, st)
-    
     if preenchidas < total:
         st.warning(f"⚠️ Atenção: {total - preenchidas} perguntas ainda não foram respondidas!")
-    
+
     col1, col2 = st.columns(2)
     with col1:
         if st.button("← Voltar", use_container_width=True):
@@ -1845,14 +1619,9 @@ elif st.session_state["etapa"] == "3. Análise":
     with col2:
         if not modo_leitura:
             if st.button("Prosseguir →", use_container_width=True, type="primary"):
-                # Usa as respostas atuais
                 respostas_atual = st.session_state["respostas_analise"]
                 preenchidas_agora = sum(1 for v in respostas_atual.values() if resposta_preenchida(v))
                 if preenchidas_agora == total:
-                    # Garante que temp seja uma cópia atualizada
-                    st.session_state["respostas_temp"] = dict(respostas_atual)
-                    st.session_state["observacoes_temp"] = dict(st.session_state["observacoes_analise"])
-                    st.session_state["pendencias_manuais"] = dict(st.session_state["pendencias_analise"])
                     st.session_state["etapa"] = "4. Revisão"
                     st.rerun()
                 else:
@@ -1861,7 +1630,7 @@ elif st.session_state["etapa"] == "3. Análise":
             if st.button("Voltar à página inicial", use_container_width=True):
                 st.session_state["etapa"] = "1. Protocolo"
                 st.rerun()
-    
+
     if not modo_leitura and st.session_state.get("botao_flutuante", False):
         st.markdown(f"""
         <div style="position: fixed; bottom: 20px; right: 20px; z-index: 999;">
@@ -1879,9 +1648,9 @@ elif st.session_state["etapa"] == "4. Revisão":
     estado = st.session_state.get("analise_estado", "em_andamento")
     usuario_atual = st.session_state.get("usuario", "")
     responsavel = st.session_state.get("analista_responsavel", "")
-    
+
     if not st.session_state.get("analise_ativa", False) and not st.session_state.get("analise_concluida", False):
-        if st.session_state.get("respostas_temp") and not st.session_state.get("analise_concluida", False):
+        if st.session_state.get("respostas_analise") and not st.session_state.get("analise_concluida", False):
             st.session_state["analise_ativa"] = True
         else:
             st.error("❌ Nenhuma análise ativa. Volte à Etapa 1 e clique em 'Iniciar Análise'")
@@ -1889,29 +1658,20 @@ elif st.session_state["etapa"] == "4. Revisão":
                 st.session_state["etapa"] = "1. Protocolo"
                 st.rerun()
             st.stop()
-    
+
     st.header("📋 Revisão da análise")
-    
     if estado == "aguardando_revisao" and usuario_atual != responsavel:
         st.info("👀 Você é o revisor desta análise. Confira as respostas, a pré-visualização do parecer e, se tudo estiver correto, clique em 'Aprovar revisão'.")
-    
-    # Tenta carregar respostas de temp, senão de analise
-    respostas = st.session_state.get("respostas_temp", {})
-    if not respostas:
-        respostas = st.session_state.get("respostas_analise", {})
-    observacoes = st.session_state.get("observacoes_temp", {})
-    if not observacoes:
-        observacoes = st.session_state.get("observacoes_analise", {})
-    pendencias_manuais = st.session_state.get("pendencias_manuais", {})
-    if not pendencias_manuais:
-        pendencias_manuais = st.session_state.get("pendencias_analise", {})
-    
+
+    respostas = st.session_state.get("respostas_analise", {})
+    observacoes = st.session_state.get("observacoes_analise", {})
+    pendencias_manuais = st.session_state.get("pendencias_analise", {})
+
     preenchidas, total, pct = progresso_percentual(respostas)
     render_progresso(preenchidas, total, pct, st)
-    
     conclusao = definir_conclusao(respostas, pendencias_manuais)
     grupos_inconformes = montar_inconformidades_por_grupo(respostas, observacoes, pendencias_manuais)
-    
+
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("📌 Resumo")
@@ -1926,25 +1686,24 @@ elif st.session_state["etapa"] == "4. Revisão":
                 st.success("🔑 Você é o revisor designado.")
         elif estado == "revisado":
             st.success("✅ Esta análise já foi revisada.")
-        
         if conclusao == "FAVORÁVEL":
             st.success(f"✅ Conclusão: {conclusao}")
         elif conclusao == "PENDENTE":
             st.warning(f"⚠️ Conclusão: {conclusao}")
         else:
             st.error(f"❌ Conclusão: {conclusao}")
-    
     with col2:
         st.subheader("📊 Estatísticas")
         total_inconformes = sum(len(v) for v in grupos_inconformes.values())
         st.metric("Perguntas", total)
         st.metric("Respondidas", preenchidas)
         st.metric("Inconformidades", total_inconformes)
-    
+
     fig = gerar_grafico_inconformidades(respostas, grupos_inconformes)
     if fig:
         st.plotly_chart(fig, use_container_width=True)
-    
+
+    # Pré-visualização do parecer
     with st.expander("👁️ Pré-visualizar parecer", expanded=False):
         dados_preview = {
             "protocolo": st.session_state.get("protocolo", ""),
@@ -1963,14 +1722,14 @@ elif st.session_state["etapa"] == "4. Revisão":
             pendencias_manuais
         )
         st.markdown(html_parecer, unsafe_allow_html=True)
-    
+
     col_botoes1, col_botoes2, col_botoes3 = st.columns(3)
-    
     with col_botoes1:
         if st.button("← Voltar para análise", use_container_width=True):
             st.session_state["etapa"] = "3. Análise"
             st.rerun()
-    
+
+    # Analista responsável pode concluir ou pular revisão
     if estado == "em_andamento" and usuario_atual == responsavel:
         with col_botoes2:
             if not st.session_state.get("analise_concluida", False):
@@ -1986,7 +1745,6 @@ elif st.session_state["etapa"] == "4. Revisão":
                         st.error(f"⚠️ Responda todas as perguntas antes de concluir ({total - preenchidas} pendentes)")
             else:
                 st.success("✅ Análise já concluída")
-        
         with col_botoes3:
             if not st.session_state.get("analise_concluida", False):
                 if st.button("⚡ Gerar parecer diretamente (pular revisão)", use_container_width=True):
@@ -2005,7 +1763,8 @@ elif st.session_state["etapa"] == "4. Revisão":
                         st.error(f"⚠️ Responda todas as perguntas antes de gerar ({total - preenchidas} pendentes)")
             else:
                 st.info("Análise já concluída. Se deseja gerar, vá para a etapa 5.")
-    
+
+    # Revisor pode aprovar
     elif estado == "aguardando_revisao" and usuario_atual != responsavel:
         with col_botoes3:
             if st.button("✅ Aprovar revisão", use_container_width=True, type="primary"):
@@ -2016,7 +1775,8 @@ elif st.session_state["etapa"] == "4. Revisão":
                 st.session_state["tempo_fim"] = agora_brasilia()
                 st.success("✅ Análise revisada e aprovada com sucesso! Agora você pode gerar o parecer.")
                 st.rerun()
-    
+
+    # Já revisado
     elif estado == "revisado":
         with col_botoes3:
             if st.button("📄 Gerar Parecer", use_container_width=True, type="primary"):
@@ -2033,19 +1793,11 @@ elif st.session_state["etapa"] == "5. Gerar parecer":
             st.session_state["etapa"] = "4. Revisão"
             st.rerun()
         st.stop()
-    
+
     st.header("📄 Geração do parecer")
-    
-    respostas = st.session_state.get("respostas_temp", {})
-    if not respostas:
-        respostas = st.session_state.get("respostas_analise", {})
-    observacoes = st.session_state.get("observacoes_temp", {})
-    if not observacoes:
-        observacoes = st.session_state.get("observacoes_analise", {})
-    pendencias_manuais = st.session_state.get("pendencias_manuais", {})
-    if not pendencias_manuais:
-        pendencias_manuais = st.session_state.get("pendencias_analise", {})
-    
+    respostas = st.session_state.get("respostas_analise", {})
+    observacoes = st.session_state.get("observacoes_analise", {})
+    pendencias_manuais = st.session_state.get("pendencias_analise", {})
     dados = {
         "protocolo": st.session_state.get("protocolo", ""),
         "tipo": st.session_state.get("tipo", ""),
@@ -2053,9 +1805,8 @@ elif st.session_state["etapa"] == "5. Gerar parecer":
         "n_lotes": st.session_state.get("n_lotes", 1),
         "matriculas": st.session_state.get("matriculas", "")
     }
-    
     conclusao = definir_conclusao(respostas, pendencias_manuais)
-    
+
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("📋 Dados do Parecer")
@@ -2072,15 +1823,14 @@ elif st.session_state["etapa"] == "5. Gerar parecer":
             st.warning(f"⚠️ Conclusão: {conclusao}")
         else:
             st.error(f"❌ Conclusão: {conclusao}")
-    
     st.markdown("---")
-    
+
     with st.expander("👁️ Visualizar Parecer", expanded=True):
         html_parecer = visualizar_parecer_html(dados, respostas, observacoes, conclusao,
                                                 st.session_state["analista"], st.session_state["n_analise"],
                                                 pendencias_manuais)
         st.markdown(html_parecer, unsafe_allow_html=True)
-    
+
     col1, col2 = st.columns(2)
     with col1:
         if st.button("← Voltar", use_container_width=True):
@@ -2110,20 +1860,16 @@ elif st.session_state["etapa"] == "5. Gerar parecer":
 # ============================================
 elif st.session_state["etapa"] == "6. Dashboard":
     st.header("📊 Dashboard de Métricas")
-    
     if not tem_permissao(2):
         st.error("❌ Acesso negado! Apenas Estagiários Sênior e Analistas Responsáveis podem acessar o Dashboard.")
     else:
         tempo_medio = calcular_tempo_medio_analise()
         if tempo_medio:
             st.metric("⏱️ Tempo Médio de Análise", f"{tempo_medio:.1f} dias")
-        
         fig_tempo = gerar_grafico_tempo_analises()
         if fig_tempo:
             st.plotly_chart(fig_tempo, use_container_width=True)
-        
         st.subheader("🔍 Busca Avançada")
-        
         col_f1, col_f2, col_f3 = st.columns(3)
         with col_f1:
             termo_busca_dash = st.text_input("Protocolo", placeholder="Digite o protocolo...")
@@ -2131,11 +1877,9 @@ elif st.session_state["etapa"] == "6. Dashboard":
             filtro_status = st.selectbox("Status", ["Todos", "FAVORÁVEL", "DESFAVORÁVEL", "PENDENTE", "Em análise"])
         with col_f3:
             filtro_analista = st.text_input("Analista", placeholder="Digite o nome...")
-        
         if st.button("🔍 Buscar", use_container_width=True):
             resultados = buscar_protocolos(termo_busca_dash, filtro_status if filtro_status != "Todos" else None,
                                            filtro_analista if filtro_analista else None)
-            
             if resultados:
                 st.subheader(f"📋 Resultados encontrados: {len(resultados)}")
                 df_resultados = pd.DataFrame(resultados)
@@ -2154,8 +1898,6 @@ elif st.session_state["etapa"] == "7. Comparador":
             st.rerun()
     else:
         st.header("🔍 Comparador de Análises")
-        
         protocolo_comp = st.text_input("N° Protocolo para comparar", value=st.session_state.get("protocolo", ""))
-        
         if protocolo_comp:
             render_comparador_analises(protocolo_comp)
