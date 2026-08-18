@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import json
+import random
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from docxtpl import DocxTemplate, RichText
@@ -118,86 +119,45 @@ def deserialize_datetime(dt_str):
         return None
 
 # ============================================
-# FUNÇÃO PARA CARREGAR DADOS DE UM PROTOCOLO EXISTENTE
+# FUNÇÃO PARA LISTAR PROTOCOLOS AGUARDANDO REVISÃO
 # ============================================
-def carregar_analise_protocolo(protocolo):
+def listar_protocolos_aguardando_revisao():
     """
-    Carrega os dados de análise de um protocolo existente.
-    Prioriza backups (contêm estado completo) sobre arquivos de análise parciais.
+    Percorre os backups e retorna uma lista de protocolos com estado 'aguardando_revisao'.
+    Cada item contém: protocolo, analista_responsavel, data_backup, caminho_do_backup.
     """
-    if not protocolo:
-        return None
-
-    protocolo_limpo = protocolo.replace("/", "-").strip()
-
-    # 1. Tenta carregar do backup mais recente para este protocolo (mais completo)
     pasta_backup = os.path.join("dados", "backups")
-    if os.path.exists(pasta_backup):
-        backups = [f for f in os.listdir(pasta_backup) if f.startswith("backup_") and f.endswith(".json")]
-        for backup in sorted(backups, reverse=True):
-            caminho = os.path.join(pasta_backup, backup)
-            try:
-                with open(caminho, "r", encoding="utf-8") as f:
-                    dados = json.load(f)
-                if dados.get("protocolo") == protocolo:
-                    # Encontrou um backup completo
-                    return {
-                        "protocolo": dados.get("protocolo", ""),
-                        "tipo": dados.get("tipo", "Loteamento"),
-                        "tipo_analise": dados.get("tipo_analise", "Aceite urbanístico"),
-                        "interessado": dados.get("interessado", ""),
-                        "n_lotes": dados.get("n_lotes", 1),
-                        "matriculas": dados.get("matriculas", ""),
-                        "analista": dados.get("analista", ""),
-                        "matricula_analista": dados.get("matricula_analista", ""),
-                        "setor": dados.get("setor", ""),
-                        "n_analise": dados.get("n_analise", ""),
-                        "respostas_analise": dados.get("respostas_analise", {}),
-                        "observacoes_analise": dados.get("observacoes_analise", {}),
-                        "pendencias_analise": dados.get("pendencias_analise", {}),
-                        "analise_ativa": dados.get("analise_ativa", False),
-                        "analise_concluida": dados.get("analise_concluida", False),
-                        "analise_estado": dados.get("analise_estado", "em_andamento"),
-                        "analista_responsavel": dados.get("analista_responsavel", ""),
-                        "analista_revisor": dados.get("analista_revisor", ""),
-                        "tempo_inicio": deserialize_datetime(dados.get("tempo_inicio")),
-                        "tempo_fim": deserialize_datetime(dados.get("tempo_fim")),
-                        "etapa": dados.get("etapa", "1. Protocolo"),
-                        "marcadas_revisao": set(dados.get("marcadas_revisao", [])),
-                        "anotacoes_pessoais": dados.get("anotacoes_pessoais", {}),
-                    }
-            except:
-                continue
-
-    # 2. Se não encontrou backup, tenta carregar de um arquivo de análise parcial
-    pasta = os.path.join("dados", protocolo_limpo)
-    if os.path.exists(pasta):
-        arquivos_analise = [f for f in os.listdir(pasta) if f.startswith("analise_") and f.endswith(".json")]
-        if arquivos_analise:
-            arquivo_mais_recente = max(arquivos_analise, key=lambda f: os.path.getmtime(os.path.join(pasta, f)))
-            caminho = os.path.join(pasta, arquivo_mais_recente)
-            try:
-                with open(caminho, "r", encoding="utf-8") as f:
-                    dados = json.load(f)
-                # Como o arquivo de análise não tem estado, assumimos que a análise ainda está em andamento.
-                return {
-                    "respostas_analise": dados.get("respostas", {}),
-                    "observacoes_analise": dados.get("observacoes", {}),
-                    "pendencias_analise": dados.get("pendencias", {}),
-                    "analista": dados.get("analista", ""),
-                    "matricula_analista": "",
-                    "setor": "",
-                    "n_analise": "",
-                    "analise_ativa": False,
-                    "analise_concluida": False,
-                    "analise_estado": "em_andamento",  # Sem estado, assume-se que não foi enviado para revisão
-                    "analista_responsavel": "",
-                    "analista_revisor": "",
-                }
-            except:
-                pass
-
-    return None
+    if not os.path.exists(pasta_backup):
+        return []
+    
+    resultados = []
+    for arquivo in os.listdir(pasta_backup):
+        if not arquivo.startswith("backup_") or not arquivo.endswith(".json"):
+            continue
+        caminho = os.path.join(pasta_backup, arquivo)
+        try:
+            with open(caminho, "r", encoding="utf-8") as f:
+                dados = json.load(f)
+            if dados.get("analise_estado") == "aguardando_revisao":
+                # Extrai data do backup do nome do arquivo
+                data_str = arquivo.replace("backup_", "").replace(".json", "")
+                try:
+                    data_obj = datetime.strptime(data_str, "%Y%m%d_%H%M%S")
+                    data_formatada = data_obj.strftime("%d/%m/%Y %H:%M")
+                except:
+                    data_formatada = "Data desconhecida"
+                resultados.append({
+                    "protocolo": dados.get("protocolo", "Desconhecido"),
+                    "analista_responsavel": dados.get("analista", "Não informado"),
+                    "data_backup": data_formatada,
+                    "caminho_backup": caminho,
+                    "backup_data": dados  # guarda os dados completos para restauração
+                })
+        except:
+            continue
+    # Ordena por data (mais recente primeiro) – usa a data extraída do nome
+    resultados.sort(key=lambda x: x["data_backup"], reverse=True)
+    return resultados
 
 # ============================================
 # FUNÇÕES DE BACKUP
@@ -1189,6 +1149,42 @@ if termo_busca:
 
 st.sidebar.markdown("---")
 
+# ========== NOVA SEÇÃO: PROTOCOLOS AGUARDANDO REVISÃO ==========
+st.sidebar.subheader("📋 Protocolos para revisão")
+protocolos_revisao = listar_protocolos_aguardando_revisao()
+if protocolos_revisao:
+    for item in protocolos_revisao:
+        with st.sidebar.expander(f"📌 {item['protocolo']}", expanded=False):
+            st.caption(f"Analista: {item['analista_responsavel']}")
+            st.caption(f"Backup: {item['data_backup']}")
+            if st.button(f"Ir para revisão", key=f"btn_revisar_{item['protocolo']}", use_container_width=True):
+                # Restaura o backup selecionado
+                dados = item["backup_data"]
+                for key, value in dados.items():
+                    if key in st.session_state:
+                        st.session_state[key] = value
+                st.session_state["respostas_temp"] = dados.get("respostas_analise", {})
+                st.session_state["observacoes_temp"] = dados.get("observacoes_analise", {})
+                st.session_state["pendencias_manuais"] = dados.get("pendencias_analise", {})
+                st.session_state["tempo_inicio"] = deserialize_datetime(dados.get("tempo_inicio"))
+                st.session_state["tempo_fim"] = deserialize_datetime(dados.get("tempo_fim"))
+                st.session_state["protocolo"] = dados.get("protocolo", "")
+                st.session_state["tipo"] = dados.get("tipo", "Loteamento")
+                st.session_state["tipo_analise"] = dados.get("tipo_analise", "Aceite urbanístico")
+                st.session_state["marcadas_revisao"] = set(dados.get("marcadas_revisao", []))
+                st.session_state["analise_estado"] = dados.get("analise_estado", "em_andamento")
+                st.session_state["analista_responsavel"] = dados.get("analista_responsavel", "")
+                st.session_state["analista_revisor"] = dados.get("analista_revisor", "")
+                st.session_state["analise_ativa"] = dados.get("analise_ativa", False)
+                st.session_state["analise_concluida"] = dados.get("analise_concluida", False)
+                # Força a etapa para revisão
+                st.session_state["etapa"] = "4. Revisão"
+                st.rerun()
+else:
+    st.sidebar.info("Nenhum protocolo aguardando revisão no momento.")
+
+st.sidebar.markdown("---")
+
 # Seletor de etapas
 menus_base = ["1. Protocolo", "2. Analista", "3. Análise", "4. Revisão", "5. Gerar parecer"]
 menus_nivel2 = ["6. Dashboard"]
@@ -1530,19 +1526,37 @@ if st.session_state["etapa"] == "1. Protocolo":
     if protocolo != st.session_state.get("protocolo_anterior", ""):
         st.session_state["protocolo_anterior"] = protocolo
         if protocolo:
-            dados_carregados = carregar_analise_protocolo(protocolo)
-            if dados_carregados:
-                # Atualiza session_state com os dados carregados
-                for key, value in dados_carregados.items():
-                    if key in st.session_state:
-                        st.session_state[key] = value
-                # Atualiza variáveis temporárias para consistência
-                st.session_state["respostas_temp"] = st.session_state.get("respostas_analise", {})
-                st.session_state["observacoes_temp"] = st.session_state.get("observacoes_analise", {})
-                st.session_state["pendencias_manuais"] = st.session_state.get("pendencias_analise", {})
-                # Recarrega perguntas
-                perguntas = carregar_perguntas_por_tipo(st.session_state["tipo"], st.session_state["tipo_analise"])
-                st.rerun()
+            # Tenta carregar de um backup específico (último backup para este protocolo)
+            pasta_backup = os.path.join("dados", "backups")
+            if os.path.exists(pasta_backup):
+                backups = [f for f in os.listdir(pasta_backup) if f.startswith("backup_") and f.endswith(".json")]
+                for backup in sorted(backups, reverse=True):
+                    caminho = os.path.join(pasta_backup, backup)
+                    try:
+                        with open(caminho, "r", encoding="utf-8") as f:
+                            dados = json.load(f)
+                        if dados.get("protocolo") == protocolo:
+                            # Atualiza com os dados do backup
+                            for key, value in dados.items():
+                                if key in st.session_state:
+                                    st.session_state[key] = value
+                            st.session_state["respostas_temp"] = dados.get("respostas_analise", {})
+                            st.session_state["observacoes_temp"] = dados.get("observacoes_analise", {})
+                            st.session_state["pendencias_manuais"] = dados.get("pendencias_analise", {})
+                            st.session_state["tempo_inicio"] = deserialize_datetime(dados.get("tempo_inicio"))
+                            st.session_state["tempo_fim"] = deserialize_datetime(dados.get("tempo_fim"))
+                            st.session_state["marcadas_revisao"] = set(dados.get("marcadas_revisao", []))
+                            st.session_state["analise_estado"] = dados.get("analise_estado", "em_andamento")
+                            st.session_state["analista_responsavel"] = dados.get("analista_responsavel", "")
+                            st.session_state["analista_revisor"] = dados.get("analista_revisor", "")
+                            st.session_state["analise_ativa"] = dados.get("analise_ativa", False)
+                            st.session_state["analise_concluida"] = dados.get("analise_concluida", False)
+                            # Recarrega perguntas
+                            perguntas = carregar_perguntas_por_tipo(st.session_state["tipo"], st.session_state["tipo_analise"])
+                            st.rerun()
+                            break
+                    except:
+                        continue
     
     if protocolo != st.session_state["protocolo"]:
         st.session_state["protocolo"] = protocolo
@@ -1614,7 +1628,6 @@ if st.session_state["etapa"] == "1. Protocolo":
         responsavel = st.session_state.get("analista_responsavel", "")
         if responsavel:
             st.info(f"Analista responsável: {responsavel}")
-        # Botão direto para revisão (etapa 4)
         if st.button("🔍 Ir para Revisão", use_container_width=True):
             st.session_state["etapa"] = "4. Revisão"
             st.rerun()
@@ -1717,6 +1730,23 @@ elif st.session_state["etapa"] == "3. Análise":
             st.session_state["botao_flutuante"] = True
         else:
             st.session_state["botao_flutuante"] = False
+    
+    # Botão para preencher aleatoriamente (apenas nível 3)
+    if tem_permissao(3) and not modo_leitura:
+        col_btn1, col_btn2 = st.columns([1, 4])
+        with col_btn1:
+            if st.button("🎲 Preencher respostas aleatoriamente", use_container_width=True, help="Preenche todas as perguntas não respondidas com opções aleatórias (para testes)"):
+                for p in perguntas:
+                    pid = p["id"]
+                    if not resposta_preenchida(respostas.get(pid)):
+                        opcoes = p["opcoes"]
+                        if opcoes:
+                            # Escolhe uma opção aleatória (excluindo "Selecione...")
+                            opcoes_validas = [op for op in opcoes if op != "Selecione..."]
+                            if opcoes_validas:
+                                respostas[pid] = random.choice(opcoes_validas)
+                st.session_state["respostas_analise"] = respostas
+                st.rerun()
     
     grupos_ordenados = []
     for p in perguntas:
