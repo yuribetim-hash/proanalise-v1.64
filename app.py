@@ -122,10 +122,6 @@ def deserialize_datetime(dt_str):
 # FUNÇÃO PARA LISTAR PROTOCOLOS AGUARDANDO REVISÃO
 # ============================================
 def listar_protocolos_aguardando_revisao():
-    """
-    Percorre os backups e retorna uma lista de protocolos com estado 'aguardando_revisao'.
-    Cada item contém: protocolo, analista_responsavel, data_backup, caminho_do_backup.
-    """
     pasta_backup = os.path.join("dados", "backups")
     if not os.path.exists(pasta_backup):
         return []
@@ -139,7 +135,6 @@ def listar_protocolos_aguardando_revisao():
             with open(caminho, "r", encoding="utf-8") as f:
                 dados = json.load(f)
             if dados.get("analise_estado") == "aguardando_revisao":
-                # Extrai data do backup do nome do arquivo
                 data_str = arquivo.replace("backup_", "").replace(".json", "")
                 try:
                     data_obj = datetime.strptime(data_str, "%Y%m%d_%H%M%S")
@@ -151,11 +146,10 @@ def listar_protocolos_aguardando_revisao():
                     "analista_responsavel": dados.get("analista", "Não informado"),
                     "data_backup": data_formatada,
                     "caminho_backup": caminho,
-                    "backup_data": dados  # guarda os dados completos para restauração
+                    "backup_data": dados
                 })
         except:
             continue
-    # Ordena por data (mais recente primeiro) – usa a data extraída do nome
     resultados.sort(key=lambda x: x["data_backup"], reverse=True)
     return resultados
 
@@ -1158,7 +1152,6 @@ if protocolos_revisao:
             st.caption(f"Analista: {item['analista_responsavel']}")
             st.caption(f"Backup: {item['data_backup']}")
             if st.button(f"Ir para revisão", key=f"btn_revisar_{item['protocolo']}", use_container_width=True):
-                # Restaura o backup selecionado
                 dados = item["backup_data"]
                 for key, value in dados.items():
                     if key in st.session_state:
@@ -1177,7 +1170,6 @@ if protocolos_revisao:
                 st.session_state["analista_revisor"] = dados.get("analista_revisor", "")
                 st.session_state["analise_ativa"] = dados.get("analise_ativa", False)
                 st.session_state["analise_concluida"] = dados.get("analise_concluida", False)
-                # Força a etapa para revisão
                 st.session_state["etapa"] = "4. Revisão"
                 st.rerun()
 else:
@@ -1201,7 +1193,6 @@ if tem_permissao(2):
 if tem_permissao(3):
     menus_disponiveis.extend(menus_nivel3)
 
-# Garantir que a etapa atual esteja na lista
 if st.session_state["etapa"] not in menus_disponiveis:
     st.session_state["etapa"] = menus_disponiveis[0]
 
@@ -1522,11 +1513,9 @@ if st.session_state["etapa"] == "1. Protocolo":
     
     protocolo = st.text_input("N° Protocolo", value=st.session_state["protocolo"], key="protocolo_input")
     
-    # Se o protocolo mudou, tenta carregar dados existentes
     if protocolo != st.session_state.get("protocolo_anterior", ""):
         st.session_state["protocolo_anterior"] = protocolo
         if protocolo:
-            # Tenta carregar de um backup específico (último backup para este protocolo)
             pasta_backup = os.path.join("dados", "backups")
             if os.path.exists(pasta_backup):
                 backups = [f for f in os.listdir(pasta_backup) if f.startswith("backup_") and f.endswith(".json")]
@@ -1536,7 +1525,6 @@ if st.session_state["etapa"] == "1. Protocolo":
                         with open(caminho, "r", encoding="utf-8") as f:
                             dados = json.load(f)
                         if dados.get("protocolo") == protocolo:
-                            # Atualiza com os dados do backup
                             for key, value in dados.items():
                                 if key in st.session_state:
                                     st.session_state[key] = value
@@ -1551,7 +1539,6 @@ if st.session_state["etapa"] == "1. Protocolo":
                             st.session_state["analista_revisor"] = dados.get("analista_revisor", "")
                             st.session_state["analise_ativa"] = dados.get("analise_ativa", False)
                             st.session_state["analise_concluida"] = dados.get("analise_concluida", False)
-                            # Recarrega perguntas
                             perguntas = carregar_perguntas_por_tipo(st.session_state["tipo"], st.session_state["tipo_analise"])
                             st.rerun()
                             break
@@ -1741,11 +1728,12 @@ elif st.session_state["etapa"] == "3. Análise":
                     if not resposta_preenchida(respostas.get(pid)):
                         opcoes = p["opcoes"]
                         if opcoes:
-                            # Escolhe uma opção aleatória (excluindo "Selecione...")
                             opcoes_validas = [op for op in opcoes if op != "Selecione..."]
                             if opcoes_validas:
                                 respostas[pid] = random.choice(opcoes_validas)
+                # Atualiza ambos os estados para garantir persistência
                 st.session_state["respostas_analise"] = respostas
+                st.session_state["respostas_temp"] = respostas.copy()
                 st.rerun()
     
     grupos_ordenados = []
@@ -1879,7 +1867,7 @@ elif st.session_state["etapa"] == "3. Análise":
         """, unsafe_allow_html=True)
 
 # ============================================
-# ETAPA 4 - REVISÃO (com pré-visualização e botão para pular revisão)
+# ETAPA 4 - REVISÃO
 # ============================================
 elif st.session_state["etapa"] == "4. Revisão":
     estado = st.session_state.get("analise_estado", "em_andamento")
@@ -1944,7 +1932,6 @@ elif st.session_state["etapa"] == "4. Revisão":
     if fig:
         st.plotly_chart(fig, use_container_width=True)
     
-    # ========== PRÉ-VISUALIZAÇÃO DO PARECER ==========
     with st.expander("👁️ Pré-visualizar parecer", expanded=False):
         dados_preview = {
             "protocolo": st.session_state.get("protocolo", ""),
@@ -1964,7 +1951,6 @@ elif st.session_state["etapa"] == "4. Revisão":
         )
         st.markdown(html_parecer, unsafe_allow_html=True)
     
-    # ========== BOTÕES DE AÇÃO ==========
     col_botoes1, col_botoes2, col_botoes3 = st.columns(3)
     
     with col_botoes1:
