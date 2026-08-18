@@ -17,8 +17,7 @@ ID: pre_perimetro
 PERGUNTA: O imóvel se projeta sobre área rural?
 OPCOES: Sim;Não;Não se enquadra
 CONFORMES: Não;Não se enquadra
-REGRA_Sim: O projeto de parcelamento do solo com finalidade urbana somente poderá se projetar sobre o perímetro urbano municipal.
-
+REGRA_Sim: O projeto de parcelamento do solo com finalidade urbana somente poderá se projetar sobre o perímetro urbano municipal. Caso o imóvel incida sobre porções urbanas e rurais do território dever indicar sua proporção em mapa e memorial;
 
 GRUPO: DOCUMENTAL
 ID: doc_matricula
@@ -29,10 +28,10 @@ REGRA_Não: Deverá apresentar matrícula(s) atualizada(s) do empreendimento (90
 
 GRUPO: DOCUMENTAL
 ID: doc_matricula_leitura
-PERGUNTA: Realizou a leitura completa da(s) matrícula(s) do empreendimento? Apontar as observações pertinentes. Buscar por averbações restritivas impositivas e que impactem no projeto.
+PERGUNTA: Buscar por averbações que impactem no projeto. O projetista Representou? Analista, informe nas observações.
 OPCOES: Sim;Não;Não se enquadra
 CONFORMES: Sim;Não se enquadra
-REGRA_Não: ****Atenção analista, realize a leitura completa das matrículas do empreendimento.
+REGRA_Não: Considerando a averbação descrita na matrícula imobiliária do imóvel.
 
 GRUPO: DOCUMENTAL
 ID: doc_cnd
@@ -43,10 +42,10 @@ REGRA_Não: Apresentar Certidão Negativa de Débitos Municipais em favor da(s) 
 
 GRUPO: DOCUMENTAL
 ID: doc_cs
-PERGUNTA: Caso CNPJ apresentou contrato social ou certidão simplificada para o responsável proprietário do empreendimento?
+PERGUNTA: Caso CNPJ, apresentou contrato social ou certidão simplificada para o responsável proprietário do empreendimento?
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Sim;Não se enquadra
-REGRA_Não: Apresentar o contrato social da empresa ou certidão simplificada em que seja possível verificar qual ou quais os responsáveis legais pela administração. No campo de assinatura do(s) proprietário(s) deverá indicar o(s) responsáveis pela administração conforme estabelecido em documento comprobatório;
+REGRA_Não: Apresentar o contrato social da empresa ou certidão simplificada em que seja possível verificar qual ou quais os responsáveis legais pela administração. No campo de assinatura do material técnico, deverá indicar o(s) responsáveis pela administração conforme estabelecido em documento comprobatório;
 
 GRUPO: DOCUMENTAL
 ID: doc_drtprop
@@ -60,7 +59,7 @@ ID: doc_drtproc
 PERGUNTA: a D.R.T apresentada é compatível quanto ao processo?
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Sim;Não se enquadra
-REGRA_Não: O D.R.T deverá ser compatível ao processo pleiteado, no sentido que para retificações de área as atividades aceitas são, topografia, levantamento topográfico planimétrico, levantamento topográfico planialtimétrico, e/ou equivalentes. A(s) área(s) informadas deverão ser totalmente compatibilizadas entre mapa, memorial e D.R.T;
+REGRA_Não: Apresentar procuração dos direitos do outorgante ao outorgado reconhecido em firma (se for advogado não precisa reconhecer firma) ou assinado digitalmente, (mediante a apresentação do arquivo digital);
 
 GRUPO: DOCUMENTAL
 ID: doc_drtpag
@@ -69,19 +68,41 @@ OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Sim;Não se enquadra
 REGRA_Não: O D.R.T deverá ser válido mediante o pagamento ou a apresentação do comprovante de pagamento;
 
+GRUPO: DOCUMENTAL
+ID: doc_termo
+PERGUNTA: Há necessidade de apresentar termo de doação? apresentou?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Apresentar termo de doação reconhecido em firma ou assinado digitalmente, (mediante a apresentação do arquivo digital) para passeio e/ou rua, quando houver necessidade de adequar aos gabaritos existentes para vias oficiais e públicas;
+
+GRUPO: DOCUMENTAL
+ID: doc_proc
+PERGUNTA: apresentou procuração?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: O D.R.T deverá ser válido mediante o pagamento ou a apresentação do comprovante de pagamento;
+
 GRUPO: ANALISE MAPA
 ID: conf_area_publica
-PERGUNTA: Existe alguma área pública confrontando o empreendimento?
+PERGUNTA: Existe alguma área pública confrontando o empreendimento? Está claro que ela foi preservada?
 OPCOES: Não;Sim;Não se enquadra
-CONFORMES: Não;Não se enquadra
+CONFORMES: Sim;Não se enquadra
 REGRA_Não: A área do pleito confronta com terreno público municipal. Informamos que, visando assegurar a preservação do patrimônio público municipal será realizado o georreferenciamento e avaliação da área. Disponibilzar o arquivo georreferenciado conforme estabelece a IN-10 de 2024 do SEPLAN, para a verificação da não sobreposição de área publica;
 
 GRUPO: ANALISE MAPA
 ID: conf_cotas
-PERGUNTA: Todas as cotas necessárias estão descritas? indicar em observações.
+PERGUNTA: Todas as cotas necessárias para a análise estão descritas? Caso não, indicar em observações.
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Sim;Não se enquadra
 REGRA_Não: Adequar a representação a(s) cota(s) faltante(s) necessária(s).
+
+GRUPO: ANALISE MAPA
+ID: conf_40
+PERGUNTA: A retificação apresenta aumento 40% ou mais? Apresentou declaração explicando?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Considerando que a retificação de área pleiteada apresentou diferença (igual ou superior a 40%) de área em relação ao registrado em matrícula. Solicitamos que o responsável técnico descreva de forma sucinta o motivo para tal variação. 
+
 
 GRUPO: ANALISE MAPA
 ID: conf_endereco
@@ -92,7 +113,7 @@ REGRA_Não: Adequar as informações do endereço do imóvel para que esteja tot
 
 GRUPO: ANALISE MAPA
 ID: conf_area_app
-PERGUNTA: Existe algum curso d'agua? representou app corretamente?
+PERGUNTA: Existe alguma área de preservação permanente? representou corretamente?
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Sim;Não se enquadra
 REGRA_Não: Adequar planta de projeto para conter: Cursos d’agua, representação das Áreas de Preservação Permanente e suas dimensões de afastamento.
@@ -107,38 +128,39 @@ REGRA_Sim: Foi encaminhado pedido de parecer à Defesa Civil, por meio de memora
 
 GRUPO: ANALISE MAPA
 ID: conf_faixa_drenagem
-PERGUNTA: Existe alguma faixa de drenagem se incidindo sobre a área de interesse?
+PERGUNTA: Existe alguma faixa de drenagem se incidindo sobre a área de interesse? Se sim, representou corretamente?
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Não;Não se enquadra
-REGRA_Sim: Durante análise foi verificada a POSSÍVEL existência de tubulação de drenagem no imóvel. Foi tramitado pedido de parecer ao departamento de DRENAGEM do SEPLAN que realizará análise referente a este item, orientando assim a possível faixa de drenagem cabível.
+REGRA_Sim: Durante análise foi verificada a POSSÍVEL existência de tubulação de drenagem no imóvel. Foi tramitado pedido de parecer ao departamento de DRENAGEM do SEPLAN que realizará análise referente a este item, orientando assim a possível faixa de drenagem cabível. Após receber a informação da faixa de drenagem pluvial pública, representar em material técnico.
 
 GRUPO: ANALISE MAPA
 ID: conf_area_celesc
-PERGUNTA: Existe alguma linha de transmissão de energia da Celesc no imóvel? Apresentou?
+PERGUNTA: Existe alguma linha de transmissão de energia da Celesc no imóvel? Representou corretamente? Apresentou anuência?
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Sim;Não se enquadra
-REGRA_Não: Adequar material técnico para conter: Representação da faixa de serviço da linha de transmissão de energia presente no imóvel (CELESC). Vide manual de Procedimentos da Celesc.
+REGRA_Não: Adequar material técnico para conter: Representação da faixa de serviço da linha de transmissão de energia presente no imóvel (CELESC). Vide manual de Procedimentos da Celesc. Será obrigatória ainda a anuência do referido órgão para aprovação deste pleito municipal.
 
 GRUPO: ANALISE MAPA
 ID: conf_area_tbg
-PERGUNTA: Existe alguma linha de transmissão de gás no imóvel (TBG)? Apresentou?
+PERGUNTA: Existe alguma linha de transmissão de gás no imóvel (TBG)? Representou corretamente? Apresentou anuência?
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Sim;Não se enquadra
-REGRA_Não: Adequar material técnico para contemplar a representação da faixa de servidão da linha de transmissão de gás (TBG) existente no imóvel. Para o possível futuro alvará do empreendimento deverá apresentar, ainda, a anuência da Transportadora Brasileira Gasoduto Bolívia-Brasil S/A (TBG) referente ao gasoduto que atravessa a área do empreendimento.
+REGRA_Não: Adequar material técnico para contemplar a representação da faixa de servidão da linha de transmissão de gás (TBG) existente no imóvel. Será obrigatória ainda a anuência do referido órgão para aprovação deste pleito municipal.
+
 
 GRUPO: ANALISE MAPA
 ID: conf_area_eletrosul
-PERGUNTA: Existe alguma linha de transmissão de energia da Eletrosul no imóvel? Apresentou?
+PERGUNTA: Existe alguma linha de transmissão de energia da Eletrosul no imóvel? Representou corretamente? Apresentou anuência?
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Sim;Não se enquadra
-REGRA_Não: Adequar material técnico para conter: Representação da faixa de serviço da linha de transmissão de energia presente no imóvel (Eletrosul). Para o possível futuro alvará do empreendimento deverá apresentar, ainda, a anuência da Eletrosul referente a linha de transmissão que atravessa a área do empreendimento.
+REGRA_Não: Adequar material técnico para conter: Representação da faixa de serviço da linha de transmissão de energia presente no imóvel (Eletrosul). Será obrigatória ainda a anuência do referido órgão para aprovação deste pleito municipal.
 
 GRUPO: ANALISE MAPA
 ID: conf_area_dominio
 PERGUNTA: Existe alguma faixa de domínio rodoviário? Apresentou? informar qual em observações.
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Sim;Não se enquadra
-REGRA_Não: Adequar material técnico para conter: Representação da faixa de domínio rodoviário. Para o possível futuro alvará do empreendimento deverá apresentar, ainda, a anuência do órgão gestor da faixa de domínio para a implantação do empreendimento.
+REGRA_Não: Adequar material técnico para conter: Representação da faixa de domínio rodoviário. Será obrigatória ainda a anuência do referido órgão para aprovação deste pleito municipal.
 
 GRUPO: ANALISE MAPA
 ID: conf_quadroarea
@@ -163,10 +185,10 @@ REGRA_Não:Adequar planta de projeto para conter: representação simplificada d
 
 GRUPO: ANALISE MAPA
 ID: conf_benfeitorias_app
-PERGUNTA: Representou as benfeitorias averbadas dentro de APP?	
+PERGUNTA: Caso exista benfeitoria averbada, incide sobre APP?
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Não;Não se enquadra
-REGRA_sim:Adequar Considerando que a Edificação averbada foi alocada dentro de área de preservação permanente, informo que faremos o envio do processo para a Fundema para a verificação da possível necessidade de regularização ambiental. A tramitação será realizada neste mesmo processo, favor atentar as movimentação no sistema;
+REGRA_Sim:Adequar Considerando que a Edificação averbada foi alocada dentro de área de preservação permanente, informo que faremos o envio do processo para a Fundema para a verificação da possível necessidade de regularização ambiental. A tramitação será realizada neste mesmo processo, favor atentar as movimentação no sistema;
 
 
 GRUPO: ANALISE MAPA
@@ -201,11 +223,11 @@ CONFORMES: Sim;Não se enquadra
 REGRA_Não: Adequar a representação da extensão oficial do sistema viário para que esteja compatível oficialmente.
 
 GRUPO: ANALISE MAPA
-ID: conf_assinaturas
-PERGUNTA: Apresentou campos para todas as assinaturas necessárias?
+ID: conf_assinaturas_mapa
+PERGUNTA: No mapa, apresentou campos para todas as assinaturas necessárias?
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Sim;Não se enquadra
-REGRA_Não: Apresentar os campos de assinaturas para todos os proprietários da(s) matrículas do pleito.
+REGRA_Não: Apresentar os campos de assinaturas para todos os proprietários da(s) matrículas do pleito. Tanto em mapa como em memorial.
 
 GRUPO: ANALISE MAPA
 ID: conf_orientacaonorte
@@ -230,70 +252,51 @@ REGRA_Não: Representar em mapa a imagem aérea com a projeção da(s) matrícul
 
 GRUPO: ANALISE MEMORIAL
 ID: conf_cabeçalho
-PERGUNTA: Apresentou o cabeçalho completo contendo, endereço completo, área e perímetro?
+PERGUNTA: Apresentou o cabeçalho completo contendo, ENDEREÇO COMPLETO, compatível ao geo, área e perímetro?
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Sim;Não se enquadra
 REGRA_Não: Adequar memorial descritivo para conter: cabeçalho com endereço completo, área e perímetro do lote;
    
 GRUPO: ANALISE MEMORIAL
 ID: conf_memorialamarr
-PERGUNTA: apresentou informações da amarração do imóvel?
+PERGUNTA: apresentou informações da amarração do imóvel? Descreveu corretamente? Se não, descrever em observações;
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Sim;Não se enquadra
-REGRA_Não: Adequar memorial descritivo para conter: Adequar memorial descritivo para conter cabeçalho com: cota de amarração do(s) lote(s)/gleba com a via pública mais próxima;
+REGRA_Não: Adequar memorial descritivo para conter: Adequar memorial descritivo para conter cabeçalho com: cota de amarração do(s) lote(s)/gleba com a via pública mais próxima.
 
 GRUPO: ANALISE MEMORIAL
 ID: conf_memorialtabela
-PERGUNTA: apresentou adequadamente a tabela de vértices no memorial?
+PERGUNTA: apresentou adequadamente (IN-010) a tabela de vértices no memorial?
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Sim;Não se enquadra
 REGRA_Não: Adequar memorial descritivo para conter:tabela de vértices com dados técnicos contendo o código do vértice e suas respectivas coordenadas geodésicas, número da matrícula dos confrontantes (na inexistência do código da parcela, prioritariamente, o número de matrícula do confrontante ou o nome completo e número do CPF do confrontante), a distância projetada do vértice ao seu ponto de vante no sentido horário. A descrição tabular da parcela ou imóvel deve iniciar no primeiro vértice de confrontação com o sistema viário ou acesso a este e seguir no sentido horário;
 
 GRUPO: ANALISE MEMORIAL
 ID: conf_memoriallot
-PERGUNTA: o lote pertence a loteamento?
+PERGUNTA: o lote pertence a loteamento? Foi informado?
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Sim;Não se enquadra
 REGRA_Não: No cabeçalho do memorial citar que o presente lote encontra-se no loteamento;
 
+GRUPO: ANALISE MEMORIAL
+ID: conf_croqui
+PERGUNTA: Apresentou o croqui simplificado com a indicação do norte e do sistema viário?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: Adequar memorial descritivo para conter: croqui do polígono da parcela ou do imóvel, indicando o norte e a posição do sistema viário;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+GRUPO: ANALISE MEMORIAL
+ID: conf_assinaturas_mem
+PERGUNTA: No memorial, apresentou campos para todas as assinaturas necessárias?
+OPCOES: Não;Sim;Não se enquadra
+CONFORMES: Sim;Não se enquadra
+REGRA_Não: No memorial, apresentar os campos de assinaturas para todos os proprietários da(s) matrículas do pleito. 
 GRUPO: ANALISE GEO
 ID: conf_arquivogeo
 PERGUNTA: Arquivo DXF Recebido está de acordo para analisar?
 OPCOES: Não;Sim;Não se enquadra
 CONFORMES: Sim;Não se enquadra
-REGRA_Não: Anexar digitalmente arquivo completo urbanístico referente ao processo (atualizado), Georreferenciado para Sirgas 2000 UTM 22 S, em formato DXF 2013;
+REGRA_Não: Anexar digitalmente arquivo referente ao processo (atualizado), Georreferenciado para Sirgas 2000 UTM 22 S, em formato DXF 2013. Em total compatibilidade com a IN-10 2025.
 
 GRUPO: ANALISE GEO
 ID: conf_areaarquivogeo
