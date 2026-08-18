@@ -1700,16 +1700,19 @@ elif st.session_state["etapa"] == "3. Análise":
     
     fazer_backup_automatico()
     
+    # Sincroniza as respostas
     if "respostas_analise" not in st.session_state:
-        st.session_state["respostas_analise"] = st.session_state.get("respostas_temp", {})
-    if "observacoes_analise" not in st.session_state:
-        st.session_state["observacoes_analise"] = st.session_state.get("observacoes_temp", {})
-    if "pendencias_analise" not in st.session_state:
-        st.session_state["pendencias_analise"] = st.session_state.get("pendencias_manuais", {})
+        st.session_state["respostas_analise"] = {}
+    if "respostas_temp" not in st.session_state:
+        st.session_state["respostas_temp"] = {}
+    
+    # Se não houver respostas_temp, inicializa a partir de respostas_analise
+    if not st.session_state["respostas_temp"] and st.session_state["respostas_analise"]:
+        st.session_state["respostas_temp"] = dict(st.session_state["respostas_analise"])
     
     respostas = st.session_state["respostas_analise"]
-    observacoes = st.session_state["observacoes_analise"]
-    pendencias_manuais = st.session_state["pendencias_analise"]
+    observacoes = st.session_state.get("observacoes_analise", {})
+    pendencias_manuais = st.session_state.get("pendencias_analise", {})
     
     if not modo_leitura:
         proximo_id, _ = proxima_pergunta_nao_respondida(respostas, perguntas)
@@ -1731,9 +1734,8 @@ elif st.session_state["etapa"] == "3. Análise":
                             opcoes_validas = [op for op in opcoes if op != "Selecione..."]
                             if opcoes_validas:
                                 respostas[pid] = random.choice(opcoes_validas)
-                # Atualiza ambos os estados para garantir persistência
                 st.session_state["respostas_analise"] = respostas
-                st.session_state["respostas_temp"] = respostas.copy()
+                st.session_state["respostas_temp"] = dict(respostas)
                 st.rerun()
     
     grupos_ordenados = []
@@ -1828,6 +1830,10 @@ elif st.session_state["etapa"] == "3. Análise":
         st.session_state["respostas_analise"] = respostas
         st.session_state["observacoes_analise"] = observacoes
         st.session_state["pendencias_analise"] = pendencias_manuais
+        # Mantém uma cópia em respostas_temp para consistência
+        st.session_state["respostas_temp"] = dict(respostas)
+        st.session_state["observacoes_temp"] = dict(observacoes)
+        st.session_state["pendencias_manuais"] = dict(pendencias_manuais)
     
     preenchidas, total, pct = progresso_percentual(respostas)
     render_progresso(preenchidas, total, pct, st)
@@ -1843,14 +1849,18 @@ elif st.session_state["etapa"] == "3. Análise":
     with col2:
         if not modo_leitura:
             if st.button("Prosseguir →", use_container_width=True, type="primary"):
-                if preenchidas == total:
-                    st.session_state["respostas_temp"] = respostas
-                    st.session_state["observacoes_temp"] = observacoes
-                    st.session_state["pendencias_manuais"] = pendencias_manuais
+                # Usa as respostas atuais
+                respostas_atual = st.session_state["respostas_analise"]
+                preenchidas_agora = sum(1 for v in respostas_atual.values() if resposta_preenchida(v))
+                if preenchidas_agora == total:
+                    # Garante que respostas_temp seja uma cópia atualizada
+                    st.session_state["respostas_temp"] = dict(respostas_atual)
+                    st.session_state["observacoes_temp"] = dict(st.session_state["observacoes_analise"])
+                    st.session_state["pendencias_manuais"] = dict(st.session_state["pendencias_analise"])
                     st.session_state["etapa"] = "4. Revisão"
                     st.rerun()
                 else:
-                    st.error(f"⚠️ Responda todas as perguntas antes de prosseguir ({total - preenchidas} pendentes)")
+                    st.error(f"⚠️ Responda todas as perguntas antes de prosseguir ({total - preenchidas_agora} pendentes)")
         else:
             if st.button("Voltar à página inicial", use_container_width=True):
                 st.session_state["etapa"] = "1. Protocolo"
