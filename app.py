@@ -2,7 +2,7 @@ import streamlit as st
 import os
 import json
 from io import BytesIO
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from docxtpl import DocxTemplate, RichText
 import hashlib
 import plotly.express as px
@@ -10,6 +10,15 @@ import plotly.graph_objects as go
 import pandas as pd
 import time
 import re
+
+# ============================================
+# CONFIGURAÇÃO DE FUSO HORÁRIO (BRASÍLIA UTC-3)
+# ============================================
+BRASILIA_TZ = timezone(timedelta(hours=-3))
+
+def agora_brasilia():
+    """Retorna a data/hora atual no fuso horário de Brasília (UTC-3)."""
+    return datetime.now(BRASILIA_TZ)
 
 st.set_page_config(
     page_title="Proanalise v1.622",
@@ -24,7 +33,7 @@ st.set_page_config(
 if "tema_mode" not in st.session_state:
     st.session_state["tema_mode"] = "claro"
 if "ultimo_backup" not in st.session_state:
-    st.session_state["ultimo_backup"] = datetime.now()
+    st.session_state["ultimo_backup"] = agora_brasilia()
 if "marcadas_revisao" not in st.session_state:
     st.session_state["marcadas_revisao"] = set()
 if "anotacoes_pessoais" not in st.session_state:
@@ -77,7 +86,6 @@ if "observacoes_analise" not in st.session_state:
     st.session_state["observacoes_analise"] = {}
 if "pendencias_analise" not in st.session_state:
     st.session_state["pendencias_analise"] = {}
-# NOVAS CHAVES PARA DUPLA ANÁLISE
 if "analise_estado" not in st.session_state:
     st.session_state["analise_estado"] = "em_andamento"
 if "analista_responsavel" not in st.session_state:
@@ -94,6 +102,7 @@ def serialize_datetime(dt):
     if dt is None:
         return None
     if isinstance(dt, datetime):
+        # Converte para string ISO com fuso horário
         return dt.isoformat()
     return dt
 
@@ -101,7 +110,11 @@ def deserialize_datetime(dt_str):
     if dt_str is None:
         return None
     try:
-        return datetime.fromisoformat(dt_str)
+        # Parse da string ISO e atribui o fuso de Brasília (caso não venha com fuso)
+        dt = datetime.fromisoformat(dt_str)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=BRASILIA_TZ)
+        return dt
     except:
         return None
 
@@ -112,7 +125,7 @@ def fazer_backup_automatico():
     if not st.session_state.get("analise_ativa", False):
         return False
     
-    agora = datetime.now()
+    agora = agora_brasilia()
     diff = (agora - st.session_state["ultimo_backup"]).total_seconds()
     
     if diff >= 300:
@@ -165,7 +178,8 @@ def salvar_backup_manual():
     pasta_backup = os.path.join("dados", "backups")
     os.makedirs(pasta_backup, exist_ok=True)
     
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    agora = agora_brasilia()
+    timestamp = agora.strftime("%Y%m%d_%H%M%S")
     backup_file = os.path.join(pasta_backup, f"backup_{timestamp}.json")
     
     dados_backup = {
@@ -384,7 +398,7 @@ def salvar_analise_analista(protocolo, analista, papel, respostas, observacoes, 
         "protocolo": protocolo,
         "analista": analista,
         "papel": papel,
-        "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+        "data": agora_brasilia().strftime("%d/%m/%Y %H:%M:%S"),
         "respostas": respostas,
         "observacoes": observacoes,
         "pendencias": pendencias,
@@ -1049,7 +1063,7 @@ if st.session_state.get("analise_ativa", False):
     elif estado == "revisado":
         st.sidebar.info("✅ Análise revisada")
     if st.session_state.get("tempo_inicio"):
-        tempo_decorrido = datetime.now() - st.session_state["tempo_inicio"]
+        tempo_decorrido = agora_brasilia() - st.session_state["tempo_inicio"]
         horas = tempo_decorrido.seconds // 3600
         minutos = (tempo_decorrido.seconds % 3600) // 60
         st.sidebar.caption(f"⏱️ Tempo: {horas}h {minutos}min")
@@ -1343,7 +1357,7 @@ def gerar_docx(dados, respostas, observacoes, conclusao, analista, matricula, se
         "matriculas": matriculas_str,
         "inconformidades": inconformidades_rt,
         "conclusao": conclusao,
-        "data": f"Data: {datetime.now().strftime('%d/%m/%Y')}",
+        "data": f"Data: {agora_brasilia().strftime('%d/%m/%Y')}",
         "analista": f"Analista: {analista}",
         "matricula": matricula,
         "setor": setor,
@@ -1370,7 +1384,7 @@ def visualizar_parecer_html(dados, respostas, observacoes, conclusao, analista, 
         <p><strong>Número de Lotes:</strong> {dados['n_lotes']}</p>
         <p><strong>Matrícula(s):</strong> {dados['matriculas']}</p>
         <p><strong>Analista:</strong> {analista}</p>
-        <p><strong>Data:</strong> {datetime.now().strftime('%d/%m/%Y')}</p>
+        <p><strong>Data:</strong> {agora_brasilia().strftime('%d/%m/%Y')}</p>
         <hr>
         <h3 style="color: #1a5276;">INCONFORMIDADES IDENTIFICADAS:</h3>
     """
@@ -1480,7 +1494,7 @@ if st.session_state["etapa"] == "1. Protocolo":
                     st.session_state["analise_concluida"] = False
                     st.session_state["analise_estado"] = "em_andamento"
                     st.session_state["analista_responsavel"] = st.session_state["usuario"]
-                    st.session_state["tempo_inicio"] = datetime.now()
+                    st.session_state["tempo_inicio"] = agora_brasilia()
                     st.session_state["etapa"] = "2. Analista"
                     st.rerun()
                 else:
@@ -1552,7 +1566,6 @@ elif st.session_state["etapa"] == "3. Análise":
     usuario_atual = st.session_state.get("usuario", "")
     responsavel = st.session_state.get("analista_responsavel", "")
     
-    # Se a análise está aguardando revisão e o usuário não é o responsável, permitir apenas visualização
     modo_leitura = False
     if estado == "aguardando_revisao" and usuario_atual != responsavel:
         modo_leitura = True
@@ -1824,7 +1837,7 @@ elif st.session_state["etapa"] == "4. Revisão":
                         st.session_state["analise_estado"] = "aguardando_revisao"
                         st.session_state["analise_concluida"] = True
                         st.session_state["analise_ativa"] = False
-                        st.session_state["tempo_fim"] = datetime.now()
+                        st.session_state["tempo_fim"] = agora_brasilia()
                         st.success("✅ Análise concluída e enviada para revisão. Aguarde a aprovação de outro analista.")
                         st.rerun()
                     else:
@@ -1836,14 +1849,13 @@ elif st.session_state["etapa"] == "4. Revisão":
             if not st.session_state.get("analise_concluida", False):
                 if st.button("⚡ Gerar parecer diretamente (pular revisão)", use_container_width=True):
                     if preenchidas == total:
-                        # Confirmação visual
                         st.warning("⚠️ Você está prestes a gerar o parecer sem revisão de outro analista.")
                         if st.button("Confirmar geração direta", use_container_width=True):
                             st.session_state["analise_estado"] = "revisado"
-                            st.session_state["analista_revisor"] = usuario_atual  # próprio analista
+                            st.session_state["analista_revisor"] = usuario_atual
                             st.session_state["analise_concluida"] = True
                             st.session_state["analise_ativa"] = False
-                            st.session_state["tempo_fim"] = datetime.now()
+                            st.session_state["tempo_fim"] = agora_brasilia()
                             st.success("✅ Parecer gerado diretamente! Você pode prosseguir para a geração do arquivo.")
                             st.session_state["etapa"] = "5. Gerar parecer"
                             st.rerun()
@@ -1860,6 +1872,7 @@ elif st.session_state["etapa"] == "4. Revisão":
                 st.session_state["analista_revisor"] = usuario_atual
                 st.session_state["analise_concluida"] = True
                 st.session_state["analise_ativa"] = False
+                st.session_state["tempo_fim"] = agora_brasilia()
                 st.success("✅ Análise revisada e aprovada com sucesso! Agora você pode gerar o parecer.")
                 st.rerun()
     
