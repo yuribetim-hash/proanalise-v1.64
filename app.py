@@ -1143,11 +1143,11 @@ with col_salvar:
         protocolo = st.session_state.get("protocolo", "Não informado")
         horario = agora_brasilia().strftime("%d/%m/%Y %H:%M:%S")
         st.sidebar.success(
-            f"✅ Análise salva com sucesso!\n\n"
-            f"📋 Protocolo: {protocolo}\n"
-            f"👤 Analista: {analista}\n"
-            f"🔢 N° Análise: {n_analise}\n"
-            f"🕒 Horário: {horario}"
+            f"Análise salva com sucesso!\n\n"
+            f"Protocolo: {protocolo}\n"
+            f"Analista: {analista}\n"
+            f"N° Análise: {n_analise}\n"
+            f"Horário: {horario}"
         )
 with col_restaurar:
     backups_disp = restaurar_analise()
@@ -1512,7 +1512,7 @@ if st.session_state["etapa"] == "1. Protocolo":
         responsavel = st.session_state.get("analista_responsavel", "")
         if responsavel:
             st.info(f"Analista responsável: {responsavel}")
-        # ALTERAÇÃO: botão agora direciona diretamente para a etapa 4 (Revisão)
+        # Botão direto para revisão (etapa 4)
         if st.button("🔍 Ir para Revisão", use_container_width=True):
             st.session_state["etapa"] = "4. Revisão"
             st.rerun()
@@ -1766,6 +1766,10 @@ elif st.session_state["etapa"] == "4. Revisão":
     
     st.header("📋 Revisão da análise")
     
+    # Mensagem de boas-vindas para o revisor
+    if estado == "aguardando_revisao" and usuario_atual != responsavel:
+        st.info("👀 Você é o revisor desta análise. Confira as respostas, a pré-visualização do parecer e, se tudo estiver correto, clique em 'Aprovar revisão'.")
+    
     respostas = st.session_state.get("respostas_temp", {})
     observacoes = st.session_state.get("observacoes_temp", {})
     pendencias_manuais = st.session_state.get("pendencias_manuais", {})
@@ -1786,6 +1790,8 @@ elif st.session_state["etapa"] == "4. Revisão":
             st.info("📝 Esta análise está em andamento.")
         elif estado == "aguardando_revisao":
             st.warning("⏳ Esta análise aguarda revisão.")
+            if usuario_atual != responsavel:
+                st.success("🔑 Você é o revisor designado.")
         elif estado == "revisado":
             st.success("✅ Esta análise já foi revisada.")
         
