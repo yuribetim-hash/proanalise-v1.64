@@ -1082,7 +1082,7 @@ if not st.session_state["logado"]:
     st.stop()
 
 # ============================================
-# SIDEBAR COM TODAS AS FUNCIONALIDADES
+# SIDEBAR
 # ============================================
 st.sidebar.title("📐 Proanalise v1.622")
 st.sidebar.write(f"👤 {st.session_state['usuario']} - {st.session_state.get('papel', 'Analista')}")
@@ -1110,7 +1110,7 @@ else:
 
 st.sidebar.markdown("---")
 
-# Resumo básico do protocolo (sempre visível)
+# Resumo básico do protocolo
 with st.sidebar.expander("📋 Resumo do Protocolo", expanded=True):
     col1, col2 = st.sidebar.columns(2)
     with col1:
@@ -1143,7 +1143,7 @@ if termo_busca:
 
 st.sidebar.markdown("---")
 
-# ========== NOVA SEÇÃO: PROTOCOLOS AGUARDANDO REVISÃO ==========
+# Protocolos aguardando revisão
 st.sidebar.subheader("📋 Protocolos para revisão")
 protocolos_revisao = listar_protocolos_aguardando_revisao()
 if protocolos_revisao:
@@ -1207,7 +1207,7 @@ st.sidebar.markdown("---")
 col_salvar, col_restaurar = st.sidebar.columns(2)
 with col_salvar:
     if st.button("💾 Salvar manual", use_container_width=True):
-        arquivo = salvar_backup_manual()
+        salvar_backup_manual()
         analista = st.session_state.get("analista", "Não informado")
         n_analise = st.session_state.get("n_analise", "Não informado")
         protocolo = st.session_state.get("protocolo", "Não informado")
@@ -1269,7 +1269,7 @@ with col_restaurar:
 
 st.sidebar.markdown("---")
 
-# Anotações pessoais do analista
+# Anotações pessoais
 with st.sidebar.expander("📓 Anotações Pessoais", expanded=False):
     anotacao_atual = st.session_state["anotacoes_pessoais"].get(st.session_state.get("protocolo", ""), "")
     nova_anotacao = st.text_area("Não vão para o parecer", value=anotacao_atual, height=150)
@@ -1327,7 +1327,7 @@ def render_progresso(preenchidas, total, pct, destino):
     destino.markdown(html, unsafe_allow_html=True)
 
 # ============================================
-# FUNÇÕES PRINCIPAIS (definição global de perguntas)
+# CARREGAR PERGUNTAS E TÍTULO
 # ============================================
 # Carregar perguntas dinâmicas
 if st.session_state.get("tipo") and st.session_state.get("tipo_analise"):
@@ -1335,9 +1335,6 @@ if st.session_state.get("tipo") and st.session_state.get("tipo_analise"):
 else:
     perguntas = []
 
-# ============================================
-# Título principal
-# ============================================
 col_logo, col_titulo = st.columns([1, 5])
 with col_logo:
     if os.path.exists("logo.png"):
@@ -1346,11 +1343,10 @@ with col_titulo:
     st.title("📐 Proanalise v1.622")
     st.caption("Sistema de análise urbanística padronizada com geração de parecer técnico")
 
-# Atualizar tema
 tema = carregar_tema()
 
 # ============================================
-# FUNÇÕES PRINCIPAIS (definição dependente de perguntas)
+# FUNÇÕES PRINCIPAIS (dependentes de perguntas)
 # ============================================
 def definir_conclusao(respostas, pendencias_manuais=None):
     for p in perguntas:
@@ -1700,15 +1696,15 @@ elif st.session_state["etapa"] == "3. Análise":
     
     fazer_backup_automatico()
     
-    # Sincroniza as respostas
+    # Sincroniza respostas
     if "respostas_analise" not in st.session_state:
         st.session_state["respostas_analise"] = {}
     if "respostas_temp" not in st.session_state:
         st.session_state["respostas_temp"] = {}
     
-    # Se não houver respostas_temp, inicializa a partir de respostas_analise
-    if not st.session_state["respostas_temp"] and st.session_state["respostas_analise"]:
-        st.session_state["respostas_temp"] = dict(st.session_state["respostas_analise"])
+    # Se houver respostas_temp mas respostas_analise estiver vazio, carrega de temp
+    if st.session_state["respostas_temp"] and not st.session_state["respostas_analise"]:
+        st.session_state["respostas_analise"] = dict(st.session_state["respostas_temp"])
     
     respostas = st.session_state["respostas_analise"]
     observacoes = st.session_state.get("observacoes_analise", {})
@@ -1721,7 +1717,7 @@ elif st.session_state["etapa"] == "3. Análise":
         else:
             st.session_state["botao_flutuante"] = False
     
-    # Botão para preencher aleatoriamente (apenas nível 3)
+    # Botão para preencher aleatoriamente (nível 3)
     if tem_permissao(3) and not modo_leitura:
         col_btn1, col_btn2 = st.columns([1, 4])
         with col_btn1:
@@ -1830,7 +1826,7 @@ elif st.session_state["etapa"] == "3. Análise":
         st.session_state["respostas_analise"] = respostas
         st.session_state["observacoes_analise"] = observacoes
         st.session_state["pendencias_analise"] = pendencias_manuais
-        # Mantém uma cópia em respostas_temp para consistência
+        # Mantém cópia em temp
         st.session_state["respostas_temp"] = dict(respostas)
         st.session_state["observacoes_temp"] = dict(observacoes)
         st.session_state["pendencias_manuais"] = dict(pendencias_manuais)
@@ -1853,7 +1849,7 @@ elif st.session_state["etapa"] == "3. Análise":
                 respostas_atual = st.session_state["respostas_analise"]
                 preenchidas_agora = sum(1 for v in respostas_atual.values() if resposta_preenchida(v))
                 if preenchidas_agora == total:
-                    # Garante que respostas_temp seja uma cópia atualizada
+                    # Garante que temp seja uma cópia atualizada
                     st.session_state["respostas_temp"] = dict(respostas_atual)
                     st.session_state["observacoes_temp"] = dict(st.session_state["observacoes_analise"])
                     st.session_state["pendencias_manuais"] = dict(st.session_state["pendencias_analise"])
@@ -1899,9 +1895,16 @@ elif st.session_state["etapa"] == "4. Revisão":
     if estado == "aguardando_revisao" and usuario_atual != responsavel:
         st.info("👀 Você é o revisor desta análise. Confira as respostas, a pré-visualização do parecer e, se tudo estiver correto, clique em 'Aprovar revisão'.")
     
+    # Tenta carregar respostas de temp, senão de analise
     respostas = st.session_state.get("respostas_temp", {})
+    if not respostas:
+        respostas = st.session_state.get("respostas_analise", {})
     observacoes = st.session_state.get("observacoes_temp", {})
+    if not observacoes:
+        observacoes = st.session_state.get("observacoes_analise", {})
     pendencias_manuais = st.session_state.get("pendencias_manuais", {})
+    if not pendencias_manuais:
+        pendencias_manuais = st.session_state.get("pendencias_analise", {})
     
     preenchidas, total, pct = progresso_percentual(respostas)
     render_progresso(preenchidas, total, pct, st)
@@ -2034,8 +2037,14 @@ elif st.session_state["etapa"] == "5. Gerar parecer":
     st.header("📄 Geração do parecer")
     
     respostas = st.session_state.get("respostas_temp", {})
+    if not respostas:
+        respostas = st.session_state.get("respostas_analise", {})
     observacoes = st.session_state.get("observacoes_temp", {})
+    if not observacoes:
+        observacoes = st.session_state.get("observacoes_analise", {})
     pendencias_manuais = st.session_state.get("pendencias_manuais", {})
+    if not pendencias_manuais:
+        pendencias_manuais = st.session_state.get("pendencias_analise", {})
     
     dados = {
         "protocolo": st.session_state.get("protocolo", ""),
