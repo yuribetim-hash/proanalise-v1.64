@@ -21,7 +21,7 @@ def agora_brasilia():
     return datetime.now(BRASILIA_TZ)
 
 st.set_page_config(
-    page_title="Proanalise v1.622",
+    page_title="Proanalise v1.641",
     page_icon="📐",
     layout="wide",
     initial_sidebar_state="expanded"
