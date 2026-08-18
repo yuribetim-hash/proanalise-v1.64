@@ -1,6 +1,6 @@
 GRUPO: PRÉ ANÁLISE
 ID: pre_taxa
-PERGUNTA: Apresentou a comprovação de pagamento da taxa de análise?
+PERGUNTA:  Apresentou a comprovação de pagamento da taxa de análise?
 OPCOES: Sim;Não;Não se enquadra
 CONFORMES: Sim;Não se enquadra
 REGRA_Não: Apresentar taxa de análise do aceite urbanístico, com comprovante de pagamento;
@@ -130,8 +130,8 @@ GRUPO: ANALISE MAPA
 ID: conf_faixa_drenagem
 PERGUNTA: Existe alguma faixa de drenagem se incidindo sobre a área de interesse? Se sim, representou corretamente?
 OPCOES: Não;Sim;Não se enquadra
-CONFORMES: Não;Não se enquadra
-REGRA_Sim: Durante análise foi verificada a POSSÍVEL existência de tubulação de drenagem no imóvel. Foi tramitado pedido de parecer ao departamento de DRENAGEM do SEPLAN que realizará análise referente a este item, orientando assim a possível faixa de drenagem cabível. Após receber a informação da faixa de drenagem pluvial pública, representar em material técnico.
+CONFORMES: sim;Não se enquadra
+REGRA_Não: Durante análise foi verificada a POSSÍVEL existência de tubulação de drenagem no imóvel. Foi tramitado pedido de parecer ao departamento de DRENAGEM do SEPLAN que realizará análise referente a este item, orientando assim a possível faixa de drenagem cabível. Após receber a informação da faixa de drenagem pluvial pública, representar em material técnico.
 
 GRUPO: ANALISE MAPA
 ID: conf_area_celesc
