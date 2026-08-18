@@ -102,7 +102,6 @@ def serialize_datetime(dt):
     if dt is None:
         return None
     if isinstance(dt, datetime):
-        # Converte para string ISO com fuso horário
         return dt.isoformat()
     return dt
 
@@ -110,7 +109,6 @@ def deserialize_datetime(dt_str):
     if dt_str is None:
         return None
     try:
-        # Parse da string ISO e atribui o fuso de Brasília (caso não venha com fuso)
         dt = datetime.fromisoformat(dt_str)
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=BRASILIA_TZ)
@@ -1139,8 +1137,18 @@ st.sidebar.markdown("---")
 col_salvar, col_restaurar = st.sidebar.columns(2)
 with col_salvar:
     if st.button("💾 Salvar manual", use_container_width=True):
-        salvar_backup_manual()
-        st.sidebar.success("Análise salva!")
+        arquivo = salvar_backup_manual()
+        analista = st.session_state.get("analista", "Não informado")
+        n_analise = st.session_state.get("n_analise", "Não informado")
+        protocolo = st.session_state.get("protocolo", "Não informado")
+        horario = agora_brasilia().strftime("%d/%m/%Y %H:%M:%S")
+        st.sidebar.success(
+            f"✅ Análise salva com sucesso!\n\n"
+            f"📋 Protocolo: {protocolo}\n"
+            f"👤 Analista: {analista}\n"
+            f"🔢 N° Análise: {n_analise}\n"
+            f"🕒 Horário: {horario}"
+        )
 with col_restaurar:
     backups_disp = restaurar_analise()
     if backups_disp:
@@ -1504,8 +1512,9 @@ if st.session_state["etapa"] == "1. Protocolo":
         responsavel = st.session_state.get("analista_responsavel", "")
         if responsavel:
             st.info(f"Analista responsável: {responsavel}")
-        if st.button("🔍 Ver Análise (somente leitura)", use_container_width=True):
-            st.session_state["etapa"] = "3. Análise"
+        # ALTERAÇÃO: botão agora direciona diretamente para a etapa 4 (Revisão)
+        if st.button("🔍 Ir para Revisão", use_container_width=True):
+            st.session_state["etapa"] = "4. Revisão"
             st.rerun()
     elif estado == "revisado":
         st.success("✅ Análise revisada e aprovada")
