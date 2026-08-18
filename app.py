@@ -90,6 +90,8 @@ if "analista_responsavel" not in st.session_state:
     st.session_state["analista_responsavel"] = ""
 if "analista_revisor" not in st.session_state:
     st.session_state["analista_revisor"] = ""
+if "modo_revisao" not in st.session_state:
+    st.session_state["modo_revisao"] = False
 
 HASH_SALT = "proanalise_salt_2024"
 
@@ -114,36 +116,150 @@ def deserialize_datetime(dt_str):
     except:
         return None
 
+def dados_analise_persistente():
+    """Retorna os dados da análise que devem sobreviver ao rerun/sessão."""
+    return {
+        "protocolo": st.session_state.get("protocolo", ""),
+        "tipo": st.session_state.get("tipo", ""),
+        "tipo_analise": st.session_state.get("tipo_analise", ""),
+        "interessado": st.session_state.get("interessado", ""),
+        "n_lotes": st.session_state.get("n_lotes", 1),
+        "matriculas": st.session_state.get("matriculas", ""),
+        "analista": st.session_state.get("analista", ""),
+        "matricula_analista": st.session_state.get("matricula_analista", ""),
+        "setor": st.session_state.get("setor", ""),
+        "n_analise": st.session_state.get("n_analise", ""),
+        "respostas_analise": dict(st.session_state.get("respostas_analise", {})),
+        "observacoes_analise": dict(st.session_state.get("observacoes_analise", {})),
+        "pendencias_analise": dict(st.session_state.get("pendencias_analise", {})),
+        "analise_ativa": st.session_state.get("analise_ativa", False),
+        "analise_concluida": st.session_state.get("analise_concluida", False),
+        "analise_estado": st.session_state.get("analise_estado", "em_andamento"),
+        "analista_responsavel": st.session_state.get("analista_responsavel", ""),
+        "analista_revisor": st.session_state.get("analista_revisor", ""),
+        "tempo_inicio": serialize_datetime(st.session_state.get("tempo_inicio")),
+        "tempo_fim": serialize_datetime(st.session_state.get("tempo_fim")),
+        "etapa": st.session_state.get("etapa", ""),
+        "marcadas_revisao": list(st.session_state.get("marcadas_revisao", set())),
+        "anotacoes_pessoais": st.session_state.get("anotacoes_pessoais", {}),
+        "data_atualizacao": agora_brasilia().isoformat()
+    }
+
+def salvar_estado_analise_persistente():
+    """Grava o estado atual em arquivo próprio do protocolo."""
+    protocolo = st.session_state.get("protocolo", "").strip()
+    if not protocolo:
+        return None
+    pasta = get_pasta_protocolo(protocolo)
+    os.makedirs(pasta, exist_ok=True)
+    arquivo = os.path.join(pasta, "estado_analise.json")
+    dados = dados_analise_persistente()
+    with open(arquivo, "w", encoding="utf-8") as f:
+        json.dump(dados, f, indent=4, ensure_ascii=False)
+    return arquivo
+
+def carregar_estado_analise_persistente(protocolo):
+    protocolo = str(protocolo or "").strip()
+    if not protocolo:
+        return None
+    arquivo = os.path.join(get_pasta_protocolo(protocolo), "estado_analise.json")
+    if not os.path.exists(arquivo):
+        return None
+    try:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+def aplicar_estado_analise(dados, etapa=None):
+    """Carrega uma análise persistida para a sessão atual."""
+    if not dados:
+        return False
+    chaves = [
+        "protocolo", "tipo", "tipo_analise", "interessado", "n_lotes",
+        "matriculas", "analista", "matricula_analista", "setor", "n_analise",
+        "respostas_analise", "observacoes_analise", "pendencias_analise",
+        "analise_ativa", "analise_concluida", "analise_estado",
+        "analista_responsavel", "analista_revisor", "marcadas_revisao",
+        "anotacoes_pessoais"
+    ]
+    for chave in chaves:
+        if chave in dados:
+            st.session_state[chave] = dados[chave]
+    st.session_state["tempo_inicio"] = deserialize_datetime(dados.get("tempo_inicio"))
+    st.session_state["tempo_fim"] = deserialize_datetime(dados.get("tempo_fim"))
+    st.session_state["marcadas_revisao"] = set(dados.get("marcadas_revisao", []))
+    if etapa:
+        st.session_state["etapa"] = etapa
+    return True
+
 def listar_protocolos_aguardando_revisao():
-    pasta_backup = os.path.join("dados", "backups")
-    if not os.path.exists(pasta_backup):
+    """Lista protocolos persistidos como aguardando revisão.
+
+    O arquivo estado_analise.json é a fonte principal. Backups antigos são
+    mantidos como fallback para não perder protocolos já existentes.
+    """
+    pasta_dados = "dados"
+    if not os.path.exists(pasta_dados):
         return []
-    resultados = []
-    for arquivo in os.listdir(pasta_backup):
-        if not arquivo.startswith("backup_") or not arquivo.endswith(".json"):
+    encontrados = {}
+
+    for nome in os.listdir(pasta_dados):
+        pasta = os.path.join(pasta_dados, nome)
+        if not os.path.isdir(pasta):
             continue
-        caminho = os.path.join(pasta_backup, arquivo)
+        arquivo = os.path.join(pasta, "estado_analise.json")
+        if not os.path.exists(arquivo):
+            continue
         try:
-            with open(caminho, "r", encoding="utf-8") as f:
+            with open(arquivo, "r", encoding="utf-8") as f:
                 dados = json.load(f)
             if dados.get("analise_estado") == "aguardando_revisao":
+                dt = deserialize_datetime(dados.get("data_atualizacao"))
+                data_formatada = dt.strftime("%d/%m/%Y %H:%M") if dt else "Data desconhecida"
+                protocolo = dados.get("protocolo", nome.replace("-", "/"))
+                encontrados[protocolo] = {
+                    "protocolo": protocolo,
+                    "analista_responsavel": dados.get("analista_responsavel") or dados.get("analista", "Não informado"),
+                    "data_backup": data_formatada,
+                    "caminho_backup": arquivo,
+                    "backup_data": dados
+                }
+        except (OSError, json.JSONDecodeError):
+            continue
+
+    # Fallback para backups antigos que ainda não possuem estado_analise.json.
+    pasta_backup = os.path.join(pasta_dados, "backups")
+    if os.path.exists(pasta_backup):
+        for arquivo in os.listdir(pasta_backup):
+            if not arquivo.startswith("backup_") or not arquivo.endswith(".json"):
+                continue
+            caminho = os.path.join(pasta_backup, arquivo)
+            try:
+                with open(caminho, "r", encoding="utf-8") as f:
+                    dados = json.load(f)
+                if dados.get("analise_estado") != "aguardando_revisao":
+                    continue
+                protocolo = dados.get("protocolo", "Desconhecido")
+                if protocolo in encontrados:
+                    continue
                 data_str = arquivo.replace("backup_", "").replace(".json", "")
                 try:
                     data_obj = datetime.strptime(data_str, "%Y%m%d_%H%M%S")
                     data_formatada = data_obj.strftime("%d/%m/%Y %H:%M")
-                except:
+                except Exception:
                     data_formatada = "Data desconhecida"
-                resultados.append({
-                    "protocolo": dados.get("protocolo", "Desconhecido"),
-                    "analista_responsavel": dados.get("analista", "Não informado"),
+                encontrados[protocolo] = {
+                    "protocolo": protocolo,
+                    "analista_responsavel": dados.get("analista_responsavel") or dados.get("analista", "Não informado"),
                     "data_backup": data_formatada,
                     "caminho_backup": caminho,
                     "backup_data": dados
-                })
-        except:
-            continue
-    resultados.sort(key=lambda x: x["data_backup"], reverse=True)
-    return resultados
+                }
+            except (OSError, json.JSONDecodeError):
+                continue
+
+    return sorted(encontrados.values(), key=lambda x: x["data_backup"], reverse=True)
 
 # ============================================
 # FUNÇÕES DE BACKUP
@@ -996,10 +1112,28 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("🔍 Busca Rápida")
 termo_busca = st.sidebar.text_input("N° Protocolo", placeholder="Digite o protocolo...", key="busca_rapida")
 if termo_busca:
-    resultados = buscar_protocolos(termo_busca)
-    if resultados:
-        for r in resultados[:5]:
-            st.sidebar.write(f"📋 {r['protocolo']} - {r['status']}")
+    dados_busca = carregar_estado_analise_persistente(termo_busca)
+    if dados_busca:
+        estado_busca = dados_busca.get("analise_estado", "em_andamento")
+        responsavel_busca = dados_busca.get("analista_responsavel") or dados_busca.get("analista", "Não informado")
+        st.sidebar.write(f"📋 {dados_busca.get('protocolo', termo_busca)} - {estado_busca.replace('_', ' ').title()}")
+        if estado_busca == "aguardando_revisao":
+            usuario_atual_busca = st.session_state.get("usuario", "")
+            if usuario_atual_busca and usuario_atual_busca == responsavel_busca:
+                st.sidebar.warning("⚠️ O Analista 1 não pode revisar a própria análise.")
+            elif st.sidebar.button("🔍 Abrir para revisão", key="abrir_revisao_busca", use_container_width=True):
+                aplicar_estado_analise(dados_busca, "4. Revisão")
+                st.session_state["modo_revisao"] = True
+                st.rerun()
+        elif estado_busca == "revisado":
+            st.sidebar.success(f"✅ Revisado por: {dados_busca.get('analista_revisor', 'Não informado')}")
+    else:
+        resultados = buscar_protocolos(termo_busca)
+        if resultados:
+            for r in resultados[:5]:
+                st.sidebar.write(f"📋 {r['protocolo']} - {r['status']}")
+        else:
+            st.sidebar.info("Nenhum protocolo encontrado.")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("📋 Protocolos para revisão")
@@ -1011,25 +1145,13 @@ if protocolos_revisao:
             st.caption(f"Backup: {item['data_backup']}")
             if st.button(f"Ir para revisão", key=f"btn_revisar_{item['protocolo']}", use_container_width=True):
                 dados = item["backup_data"]
-                for key, value in dados.items():
-                    if key in st.session_state:
-                        st.session_state[key] = value
-                st.session_state["respostas_analise"] = dados.get("respostas_analise", {})
-                st.session_state["observacoes_analise"] = dados.get("observacoes_analise", {})
-                st.session_state["pendencias_analise"] = dados.get("pendencias_analise", {})
-                st.session_state["tempo_inicio"] = deserialize_datetime(dados.get("tempo_inicio"))
-                st.session_state["tempo_fim"] = deserialize_datetime(dados.get("tempo_fim"))
-                st.session_state["protocolo"] = dados.get("protocolo", "")
-                st.session_state["tipo"] = dados.get("tipo", "Loteamento")
-                st.session_state["tipo_analise"] = dados.get("tipo_analise", "Aceite urbanístico")
-                st.session_state["marcadas_revisao"] = set(dados.get("marcadas_revisao", []))
-                st.session_state["analise_estado"] = dados.get("analise_estado", "em_andamento")
-                st.session_state["analista_responsavel"] = dados.get("analista_responsavel", "")
-                st.session_state["analista_revisor"] = dados.get("analista_revisor", "")
-                st.session_state["analise_ativa"] = dados.get("analise_ativa", False)
-                st.session_state["analise_concluida"] = dados.get("analise_concluida", False)
-                st.session_state["etapa"] = "4. Revisão"
-                st.rerun()
+                responsavel = dados.get("analista_responsavel") or dados.get("analista", "")
+                if st.session_state.get("usuario", "") == responsavel:
+                    st.error("⚠️ O analista responsável não pode revisar a própria análise.")
+                else:
+                    aplicar_estado_analise(dados, "4. Revisão")
+                    st.session_state["modo_revisao"] = True
+                    st.rerun()
 else:
     st.sidebar.info("Nenhum protocolo aguardando revisão no momento.")
 
@@ -1655,25 +1777,211 @@ elif st.session_state["etapa"] == "4. Revisão":
     estado = st.session_state.get("analise_estado", "em_andamento")
     usuario_atual = st.session_state.get("usuario", "")
     responsavel = st.session_state.get("analista_responsavel", "")
+    eh_revisor = (
+        estado == "aguardando_revisao"
+        and st.session_state.get("modo_revisao", False)
+        and bool(usuario_atual)
+        and usuario_atual != responsavel
+    )
 
+    # O revisor precisa poder trabalhar na etapa 4 mesmo que a análise
+    # tenha sido concluída pelo Analista 1 e analise_ativa=False.
     if not st.session_state.get("analise_ativa", False) and not st.session_state.get("analise_concluida", False):
-        if st.session_state.get("respostas_analise") and not st.session_state.get("analise_concluida", False):
+        if st.session_state.get("respostas_analise"):
             st.session_state["analise_ativa"] = True
         else:
-            st.error("❌ Nenhuma análise ativa. Volte à Etapa 1 e clique em 'Iniciar Análise'")
+            st.error("❌ Nenhuma análise carregada para revisão.")
             if st.button("← Voltar à Etapa 1"):
                 st.session_state["etapa"] = "1. Protocolo"
                 st.rerun()
             st.stop()
 
     st.header("📋 Revisão da análise")
-    if estado == "aguardando_revisao" and usuario_atual != responsavel:
-        st.info("👀 Você é o revisor desta análise. Confira as respostas, a pré-visualização do parecer e, se tudo estiver correto, clique em 'Aprovar revisão'.")
 
-    respostas = st.session_state.get("respostas_analise", {})
-    observacoes = st.session_state.get("observacoes_analise", {})
-    pendencias_manuais = st.session_state.get("pendencias_analise", {})
+    if eh_revisor:
+        st.info(
+            "👀 Você é o revisor desta análise. Nesta etapa você pode "
+            "editar respostas, observações e inconformidades antes de aprovar."
+        )
+    elif estado == "aguardando_revisao":
+        st.warning("⏳ Esta análise aguarda revisão por outro analista.")
+    elif estado == "revisado":
+        st.success("✅ Esta análise já foi revisada e aprovada.")
 
+    # Ativação explícita do modo de revisão. Isso evita que a Etapa 4 fique
+    # apenas em modo de visualização quando o protocolo foi aberto por outro
+    # caminho (por exemplo, pelo menu lateral).
+    if estado == "aguardando_revisao" and not eh_revisor:
+        if usuario_atual == responsavel:
+            st.error(
+                "🚫 Este é o Analista 1 responsável pela análise. "
+                "Ele não pode revisar a própria análise."
+            )
+        elif usuario_atual:
+            st.warning(
+                f"⏳ Revisão pendente. Responsável: **{responsavel or 'não informado'}**"
+            )
+            if st.button("📝 Assumir revisão como Analista 2", type="primary", use_container_width=True):
+                st.session_state["modo_revisao"] = True
+                st.session_state["analista_revisor"] = usuario_atual
+                st.rerun()
+
+    respostas = dict(st.session_state.get("respostas_analise", {}))
+    observacoes = dict(st.session_state.get("observacoes_analise", {}))
+    pendencias_manuais = dict(st.session_state.get("pendencias_analise", {}))
+
+    # ========================================================
+    # PAINEL DE EDIÇÃO DO REVISOR
+    # ========================================================
+    if eh_revisor:
+        st.success(
+            f"🔓 **Modo de revisão ativo — Analista 2: {usuario_atual}** | "
+            f"Analista 1: {responsavel or 'não informado'}"
+        )
+        st.markdown("### ✏️ Ferramentas de revisão")
+        st.caption(
+            "Altere qualquer resposta que precise de correção. As alterações "
+            "são salvas no registro do protocolo e serão utilizadas na geração do parecer."
+        )
+
+        # Garantir que os widgets da revisão recebam os valores atuais apenas
+        # na primeira renderização. As chaves review_resp_* e review_obs_* são
+        # independentes dos widgets da Etapa 3.
+        for p in perguntas:
+            pid = p["id"]
+            opcoes = ["Selecione..."] + p.get("opcoes", [])
+            valor_atual = respostas.get(pid, "Selecione...")
+            if valor_atual not in opcoes:
+                valor_atual = "Selecione..."
+
+            key_resp = f"review_resp_{pid}"
+            key_obs = f"review_obs_{pid}"
+            if key_resp not in st.session_state:
+                st.session_state[key_resp] = valor_atual
+            if key_obs not in st.session_state:
+                st.session_state[key_obs] = observacoes.get(pid, "")
+
+        grupos_ordenados = []
+        for p in perguntas:
+            if p["grupo"] not in grupos_ordenados:
+                grupos_ordenados.append(p["grupo"])
+
+        for grupo in grupos_ordenados:
+            perguntas_grupo = [p for p in perguntas if p["grupo"] == grupo]
+            with st.expander(f"📁 {grupo}", expanded=True):
+                for p in perguntas_grupo:
+                    pid = p["id"]
+                    opcoes = ["Selecione..."] + p.get("opcoes", [])
+                    key_resp = f"review_resp_{pid}"
+                    key_obs = f"review_obs_{pid}"
+
+                    st.markdown(f"**{p['pergunta']}**")
+                    st.selectbox(
+                        "Resposta",
+                        opcoes,
+                        key=key_resp,
+                        help=f"ID: {pid}"
+                    )
+                    st.text_area(
+                        "📝 Observação (opcional)",
+                        key=key_obs,
+                        height=68
+                    )
+                    st.markdown("---")
+
+                st.markdown("**📝 Inconformidades diversas**")
+                pendencias_grupo = list(pendencias_manuais.get(grupo, []))
+                # Remove apenas itens vazios para facilitar a edição.
+                pendencias_grupo = [x for x in pendencias_grupo if str(x).strip()]
+                pendencias_manuais[grupo] = pendencias_grupo
+
+                if pendencias_grupo:
+                    for i, pendencia in enumerate(pendencias_grupo):
+                        key_pend = f"review_pend_{grupo}_{i}"
+                        if key_pend not in st.session_state:
+                            st.session_state[key_pend] = pendencia
+                        st.text_area(
+                            f"Inconformidade {i + 1}",
+                            key=key_pend,
+                            height=68
+                        )
+                else:
+                    st.caption("Nenhuma inconformidade diversa registrada neste grupo.")
+
+                key_nova = f"review_nova_pend_{grupo}"
+                st.text_area(
+                    "➕ Nova inconformidade",
+                    key=key_nova,
+                    height=68,
+                    placeholder="Digite uma nova inconformidade, se necessário..."
+                )
+
+        # Sincroniza os widgets de revisão com os dicionários de trabalho.
+        for p in perguntas:
+            pid = p["id"]
+            respostas[pid] = st.session_state.get(f"review_resp_{pid}", respostas.get(pid, "Selecione..."))
+            observacoes[pid] = st.session_state.get(f"review_obs_{pid}", observacoes.get(pid, ""))
+
+        for grupo in list(pendencias_manuais.keys()):
+            atualizadas = []
+            for i in range(len(pendencias_manuais.get(grupo, []))):
+                valor = st.session_state.get(f"review_pend_{grupo}_{i}", "").strip()
+                if valor:
+                    atualizadas.append(valor)
+            nova = st.session_state.get(f"review_nova_pend_{grupo}", "").strip()
+            if nova:
+                atualizadas.append(nova)
+            pendencias_manuais[grupo] = atualizadas
+
+        st.session_state["respostas_analise"] = respostas
+        st.session_state["observacoes_analise"] = observacoes
+        st.session_state["pendencias_analise"] = pendencias_manuais
+
+        col_salvar, col_aprovar = st.columns(2)
+        with col_salvar:
+            if st.button("💾 Salvar alterações da revisão", use_container_width=True):
+                st.session_state["ultima_edicao_revisao_por"] = usuario_atual
+                st.session_state["ultima_edicao_revisao_em"] = agora_brasilia().isoformat()
+                salvar_estado_analise_persistente()
+                st.success("✅ Alterações da revisão salvas no protocolo.")
+                st.rerun()
+        with col_aprovar:
+            if st.button("✅ Aprovar revisão e prosseguir", use_container_width=True, type="primary"):
+                preenchidas_revisao, total_revisao, _ = progresso_percentual(respostas)
+                if preenchidas_revisao != total_revisao:
+                    st.error(
+                        f"⚠️ Não é possível aprovar: existem "
+                        f"{total_revisao - preenchidas_revisao} pergunta(s) sem resposta."
+                    )
+                else:
+                    # Grava as últimas alterações antes de mudar o estado.
+                    st.session_state["respostas_analise"] = respostas
+                    st.session_state["observacoes_analise"] = observacoes
+                    st.session_state["pendencias_analise"] = pendencias_manuais
+                    st.session_state["analise_estado"] = "revisado"
+                    st.session_state["analista_revisor"] = usuario_atual
+                    st.session_state["modo_revisao"] = False
+                    st.session_state["analise_concluida"] = True
+                    st.session_state["analise_ativa"] = False
+                    st.session_state["tempo_fim"] = agora_brasilia()
+                    st.session_state["ultima_edicao_revisao_por"] = usuario_atual
+                    st.session_state["ultima_edicao_revisao_em"] = agora_brasilia().isoformat()
+                    salvar_estado_analise_persistente()
+                    salvar_analise_analista(
+                        st.session_state.get("protocolo", ""),
+                        usuario_atual,
+                        "revisor_2",
+                        respostas,
+                        observacoes,
+                        pendencias_manuais
+                    )
+                    st.session_state["etapa"] = "5. Gerar parecer"
+                    st.success("✅ Revisão aprovada. Prosseguindo para a geração do parecer.")
+                    st.rerun()
+
+    # ========================================================
+    # VISÃO/RESUMO DA REVISÃO
+    # ========================================================
     preenchidas, total, pct = progresso_percentual(respostas)
     render_progresso(preenchidas, total, pct, st)
     conclusao = definir_conclusao(respostas, pendencias_manuais)
@@ -1689,8 +1997,8 @@ elif st.session_state["etapa"] == "4. Revisão":
             st.info("📝 Esta análise está em andamento.")
         elif estado == "aguardando_revisao":
             st.warning("⏳ Esta análise aguarda revisão.")
-            if usuario_atual != responsavel:
-                st.success("🔑 Você é o revisor designado.")
+            if eh_revisor:
+                st.success("🔑 Você é o revisor desta análise.")
         elif estado == "revisado":
             st.success("✅ Esta análise já foi revisada.")
         if conclusao == "FAVORÁVEL":
@@ -1710,7 +2018,7 @@ elif st.session_state["etapa"] == "4. Revisão":
     if fig:
         st.plotly_chart(fig, use_container_width=True)
 
-    # Pré-visualização do parecer
+    # Pré-visualização do parecer já usa as respostas editadas pelo revisor.
     with st.expander("👁️ Pré-visualizar parecer", expanded=False):
         dados_preview = {
             "protocolo": st.session_state.get("protocolo", ""),
@@ -1732,11 +2040,24 @@ elif st.session_state["etapa"] == "4. Revisão":
 
     col_botoes1, col_botoes2, col_botoes3 = st.columns(3)
     with col_botoes1:
-        if st.button("← Voltar para análise", use_container_width=True):
-            st.session_state["etapa"] = "3. Análise"
-            st.rerun()
+        if eh_revisor:
+            if st.button("🔄 Recarregar análise original", use_container_width=True):
+                dados = carregar_estado_analise_persistente(st.session_state.get("protocolo", ""))
+                if dados:
+                    aplicar_estado_analise(dados, etapa="4. Revisão")
+                    st.session_state["modo_revisao"] = True
+                    # As chaves dos widgets são removidas para que recebam os
+                    # valores recém-carregados no próximo ciclo.
+                    for p in perguntas:
+                        st.session_state.pop(f"review_resp_{p['id']}", None)
+                        st.session_state.pop(f"review_obs_{p['id']}", None)
+                    st.rerun()
+        else:
+            if st.button("← Voltar para análise", use_container_width=True):
+                st.session_state["etapa"] = "3. Análise"
+                st.rerun()
 
-    # Analista responsável pode concluir ou pular revisão
+    # Analista responsável pode concluir ou pular revisão.
     if estado == "em_andamento" and usuario_atual == responsavel:
         with col_botoes2:
             if not st.session_state.get("analise_concluida", False):
@@ -1746,6 +2067,16 @@ elif st.session_state["etapa"] == "4. Revisão":
                         st.session_state["analise_concluida"] = True
                         st.session_state["analise_ativa"] = False
                         st.session_state["tempo_fim"] = agora_brasilia()
+                        st.session_state["analista_responsavel"] = st.session_state.get("analista_responsavel") or st.session_state.get("usuario", "")
+                        salvar_estado_analise_persistente()
+                        salvar_analise_analista(
+                            st.session_state.get("protocolo", ""),
+                            st.session_state.get("analista", "") or st.session_state.get("usuario", ""),
+                            "analista_1",
+                            st.session_state.get("respostas_analise", {}),
+                            st.session_state.get("observacoes_analise", {}),
+                            st.session_state.get("pendencias_analise", {})
+                        )
                         st.success("✅ Análise concluída e enviada para revisão. Aguarde a aprovação de outro analista.")
                         st.rerun()
                     else:
@@ -1760,9 +2091,11 @@ elif st.session_state["etapa"] == "4. Revisão":
                         if st.button("Confirmar geração direta", use_container_width=True):
                             st.session_state["analise_estado"] = "revisado"
                             st.session_state["analista_revisor"] = usuario_atual
+                            st.session_state["modo_revisao"] = False
                             st.session_state["analise_concluida"] = True
                             st.session_state["analise_ativa"] = False
                             st.session_state["tempo_fim"] = agora_brasilia()
+                            salvar_estado_analise_persistente()
                             st.success("✅ Parecer gerado diretamente! Você pode prosseguir para a geração do arquivo.")
                             st.session_state["etapa"] = "5. Gerar parecer"
                             st.rerun()
@@ -1771,19 +2104,12 @@ elif st.session_state["etapa"] == "4. Revisão":
             else:
                 st.info("Análise já concluída. Se deseja gerar, vá para a etapa 5.")
 
-    # Revisor pode aprovar
-    elif estado == "aguardando_revisao" and usuario_atual != responsavel:
+    # Revisor: o botão principal de aprovação fica no painel superior para
+    # que as alterações sejam explicitamente salvas antes da aprovação.
+    elif estado == "aguardando_revisao" and usuario_atual == responsavel:
         with col_botoes3:
-            if st.button("✅ Aprovar revisão", use_container_width=True, type="primary"):
-                st.session_state["analise_estado"] = "revisado"
-                st.session_state["analista_revisor"] = usuario_atual
-                st.session_state["analise_concluida"] = True
-                st.session_state["analise_ativa"] = False
-                st.session_state["tempo_fim"] = agora_brasilia()
-                st.success("✅ Análise revisada e aprovada com sucesso! Agora você pode gerar o parecer.")
-                st.rerun()
+            st.warning("⚠️ O analista responsável não pode revisar a própria análise.")
 
-    # Já revisado
     elif estado == "revisado":
         with col_botoes3:
             if st.button("📄 Gerar Parecer", use_container_width=True, type="primary"):
