@@ -17,7 +17,6 @@ import re
 BRASILIA_TZ = timezone(timedelta(hours=-3))
 
 def agora_brasilia():
-    """Retorna a data/hora atual no fuso horário de Brasília (UTC-3)."""
     return datetime.now(BRASILIA_TZ)
 
 st.set_page_config(
@@ -58,6 +57,8 @@ if "etapa" not in st.session_state:
     st.session_state["etapa"] = "1. Protocolo"
 if "protocolo" not in st.session_state:
     st.session_state["protocolo"] = ""
+if "protocolo_anterior" not in st.session_state:
+    st.session_state["protocolo_anterior"] = ""
 if "tipo" not in st.session_state:
     st.session_state["tipo"] = "Loteamento"
 if "interessado" not in st.session_state:
@@ -115,6 +116,74 @@ def deserialize_datetime(dt_str):
         return dt
     except:
         return None
+
+# ============================================
+# FUNÇÃO PARA CARREGAR DADOS DE UM PROTOCOLO EXISTENTE
+# ============================================
+def carregar_analise_protocolo(protocolo):
+    """Carrega os dados de análise de um protocolo existente (arquivo de análise ou backup)."""
+    if not protocolo:
+        return None
+    
+    protocolo_limpo = protocolo.replace("/", "-").strip()
+    pasta = os.path.join("dados", protocolo_limpo)
+    
+    # 1. Tentar carregar do arquivo de análise mais recente (se existir)
+    if os.path.exists(pasta):
+        arquivos_analise = [f for f in os.listdir(pasta) if f.startswith("analise_") and f.endswith(".json")]
+        if arquivos_analise:
+            arquivo_mais_recente = max(arquivos_analise, key=lambda f: os.path.getmtime(os.path.join(pasta, f)))
+            caminho = os.path.join(pasta, arquivo_mais_recente)
+            with open(caminho, "r", encoding="utf-8") as f:
+                dados = json.load(f)
+            # Mapear para o formato do session_state (não temos estado no arquivo de analise, então usamos backup se disponível)
+            return {
+                "respostas_analise": dados.get("respostas", {}),
+                "observacoes_analise": dados.get("observacoes", {}),
+                "pendencias_analise": dados.get("pendencias", {}),
+                "analista": dados.get("analista", ""),
+                "matricula_analista": "",  # não temos no arquivo
+                "setor": "",
+                "n_analise": "",
+                # O estado será sobrescrito se houver backup
+            }
+    
+    # 2. Tentar carregar do backup mais recente para este protocolo
+    pasta_backup = os.path.join("dados", "backups")
+    if os.path.exists(pasta_backup):
+        backups = [f for f in os.listdir(pasta_backup) if f.startswith("backup_") and f.endswith(".json")]
+        for backup in sorted(backups, reverse=True):
+            caminho = os.path.join(pasta_backup, backup)
+            with open(caminho, "r", encoding="utf-8") as f:
+                dados = json.load(f)
+                if dados.get("protocolo") == protocolo:
+                    # Encontrou um backup para este protocolo
+                    return {
+                        "protocolo": dados.get("protocolo", ""),
+                        "tipo": dados.get("tipo", "Loteamento"),
+                        "tipo_analise": dados.get("tipo_analise", "Aceite urbanístico"),
+                        "interessado": dados.get("interessado", ""),
+                        "n_lotes": dados.get("n_lotes", 1),
+                        "matriculas": dados.get("matriculas", ""),
+                        "analista": dados.get("analista", ""),
+                        "matricula_analista": dados.get("matricula_analista", ""),
+                        "setor": dados.get("setor", ""),
+                        "n_analise": dados.get("n_analise", ""),
+                        "respostas_analise": dados.get("respostas_analise", {}),
+                        "observacoes_analise": dados.get("observacoes_analise", {}),
+                        "pendencias_analise": dados.get("pendencias_analise", {}),
+                        "analise_ativa": dados.get("analise_ativa", False),
+                        "analise_concluida": dados.get("analise_concluida", False),
+                        "analise_estado": dados.get("analise_estado", "em_andamento"),
+                        "analista_responsavel": dados.get("analista_responsavel", ""),
+                        "analista_revisor": dados.get("analista_revisor", ""),
+                        "tempo_inicio": deserialize_datetime(dados.get("tempo_inicio")),
+                        "tempo_fim": deserialize_datetime(dados.get("tempo_fim")),
+                        "etapa": dados.get("etapa", "1. Protocolo"),
+                        "marcadas_revisao": set(dados.get("marcadas_revisao", [])),
+                        "anotacoes_pessoais": dados.get("anotacoes_pessoais", {}),
+                    }
+    return None
 
 # ============================================
 # FUNÇÕES DE BACKUP
@@ -1015,7 +1084,7 @@ def tela_login():
         if os.path.exists("logo.png"):
             st.image("logo.png", width=200)
     
-    st.title("📐 Proanalise v1.622")
+    st.title("📐 Proanalise v1.641")
     st.caption("Sistema de análise urbanística padronizada com geração de parecer técnico")
     
     col1, col2, col3 = st.columns([1, 1.2, 1])
@@ -1047,7 +1116,7 @@ if not st.session_state["logado"]:
 # ============================================
 # SIDEBAR COM TODAS AS FUNCIONALIDADES
 # ============================================
-st.sidebar.title("📐 Proanalise v1.622")
+st.sidebar.title("📐 Proanalise v1.641")
 st.sidebar.write(f"👤 {st.session_state['usuario']} - {st.session_state.get('papel', 'Analista')}")
 st.sidebar.write(f"🔒 Nível: {st.session_state.get('nivel', 1)}")
 
@@ -1273,7 +1342,7 @@ with col_logo:
     if os.path.exists("logo.png"):
         st.image("logo.png", width=100)
 with col_titulo:
-    st.title("📐 Proanalise v1.622")
+    st.title("📐 Proanalise v1.641")
     st.caption("Sistema de análise urbanística padronizada com geração de parecer técnico")
 
 # Atualizar tema
@@ -1442,6 +1511,25 @@ if st.session_state["etapa"] == "1. Protocolo":
     st.header("📋 Dados do protocolo")
     
     protocolo = st.text_input("N° Protocolo", value=st.session_state["protocolo"], key="protocolo_input")
+    
+    # Se o protocolo mudou, tenta carregar dados existentes
+    if protocolo != st.session_state.get("protocolo_anterior", ""):
+        st.session_state["protocolo_anterior"] = protocolo
+        if protocolo:
+            dados_carregados = carregar_analise_protocolo(protocolo)
+            if dados_carregados:
+                # Atualiza session_state com os dados carregados
+                for key, value in dados_carregados.items():
+                    if key in st.session_state:
+                        st.session_state[key] = value
+                # Atualiza variáveis temporárias para consistência
+                st.session_state["respostas_temp"] = st.session_state.get("respostas_analise", {})
+                st.session_state["observacoes_temp"] = st.session_state.get("observacoes_analise", {})
+                st.session_state["pendencias_manuais"] = st.session_state.get("pendencias_analise", {})
+                # Recarrega perguntas
+                perguntas = carregar_perguntas_por_tipo(st.session_state["tipo"], st.session_state["tipo_analise"])
+                st.rerun()
+    
     if protocolo != st.session_state["protocolo"]:
         st.session_state["protocolo"] = protocolo
         if st.session_state.get("analise_ativa"):
@@ -1766,7 +1854,6 @@ elif st.session_state["etapa"] == "4. Revisão":
     
     st.header("📋 Revisão da análise")
     
-    # Mensagem de boas-vindas para o revisor
     if estado == "aguardando_revisao" and usuario_atual != responsavel:
         st.info("👀 Você é o revisor desta análise. Confira as respostas, a pré-visualização do parecer e, se tudo estiver correto, clique em 'Aprovar revisão'.")
     
@@ -1841,9 +1928,6 @@ elif st.session_state["etapa"] == "4. Revisão":
             st.session_state["etapa"] = "3. Análise"
             st.rerun()
     
-    # Estado "em_andamento" - analista responsável pode:
-    #   - Concluir e enviar para revisão (fluxo padrão)
-    #   - Gerar parecer diretamente (pular revisão)
     if estado == "em_andamento" and usuario_atual == responsavel:
         with col_botoes2:
             if not st.session_state.get("analise_concluida", False):
@@ -1879,7 +1963,6 @@ elif st.session_state["etapa"] == "4. Revisão":
             else:
                 st.info("Análise já concluída. Se deseja gerar, vá para a etapa 5.")
     
-    # Estado "aguardando_revisao" - outro analista pode aprovar
     elif estado == "aguardando_revisao" and usuario_atual != responsavel:
         with col_botoes3:
             if st.button("✅ Aprovar revisão", use_container_width=True, type="primary"):
@@ -1891,7 +1974,6 @@ elif st.session_state["etapa"] == "4. Revisão":
                 st.success("✅ Análise revisada e aprovada com sucesso! Agora você pode gerar o parecer.")
                 st.rerun()
     
-    # Estado "revisado" - mostra botão para ir gerar
     elif estado == "revisado":
         with col_botoes3:
             if st.button("📄 Gerar Parecer", use_container_width=True, type="primary"):
